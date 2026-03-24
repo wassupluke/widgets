@@ -1,3 +1,6 @@
+# Git worktrees
+.worktrees/
+
 # Compiled class file
 *.class
 
