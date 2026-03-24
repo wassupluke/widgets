@@ -23,6 +23,7 @@
 ## Task 1: Project Scaffold
 
 **Files:**
+- Create: `gradle/libs.versions.toml`
 - Create: `settings.gradle.kts`
 - Create: `build.gradle.kts` (root)
 - Create: `app/build.gradle.kts`
@@ -31,7 +32,67 @@
 - Create: `app/src/main/res/values/strings.xml`
 - Create: `app/src/main/res/values/themes.xml`
 
-**Step 1: Create `settings.gradle.kts`**
+**Step 1: Create `gradle/libs.versions.toml`**
+
+```toml
+[versions]
+agp = "8.7.0"
+kotlin = "2.0.21"
+composeBom = "2024.12.01"
+activityCompose = "1.9.3"
+navigationCompose = "2.8.5"
+glance = "1.1.1"
+workManager = "2.10.0"
+dataStore = "1.1.1"
+retrofit = "2.11.0"
+okhttp = "4.12.0"
+kotlinxSerialization = "1.7.3"
+retrofitKotlinxConverter = "1.0.0"
+playServicesLocation = "21.3.0"
+lifecycle = "2.8.7"
+coreKtx = "1.15.0"
+junit = "4.13.2"
+coroutinesTest = "1.9.0"
+robolectric = "4.14"
+androidxTestCore = "1.6.1"
+mockk = "1.13.13"
+androidxTestJunit = "1.2.1"
+
+[libraries]
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
+glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
+work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStore" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+retrofit-kotlinx-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofitKotlinxConverter" }
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-test-core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "androidxTestCore" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+```
+
+**Step 2: Create `settings.gradle.kts`**
 
 ```kotlin
 pluginManagement {
@@ -52,25 +113,25 @@ rootProject.name = "SimpleWeather"
 include(":app")
 ```
 
-**Step 2: Create root `build.gradle.kts`**
+**Step 3: Create root `build.gradle.kts`**
 
 ```kotlin
 plugins {
-    id("com.android.application") version "8.7.0" apply false
-    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21" apply false
-    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21" apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.kotlin.compose) apply false
 }
 ```
 
-**Step 3: Create `app/build.gradle.kts`**
+**Step 4: Create `app/build.gradle.kts`**
 
 ```kotlin
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -107,55 +168,54 @@ android {
 }
 
 dependencies {
-    // Compose BOM
-    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
-    implementation(composeBom)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.activity:activity-compose:1.9.3")
+    // Compose BOM — version-less entries below are resolved through the BOM
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.activity.compose)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation(libs.navigation.compose)
 
     // Glance (widget)
-    implementation("androidx.glance:glance-appwidget:1.1.1")
-    implementation("androidx.glance:glance-material3:1.1.1")
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
 
     // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation(libs.work.runtime.ktx)
 
     // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation(libs.datastore.preferences)
 
     // Retrofit + serialization
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    implementation(libs.retrofit)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit.kotlinx.converter)
 
     // Location
-    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation(libs.play.services.location)
 
     // Lifecycle
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.runtime.ktx)
 
     // Core
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation(libs.core.ktx)
 
     // Test
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-    testImplementation("org.robolectric:robolectric:4.14")
-    testImplementation("androidx.test:core-ktx:1.6.1")
-    testImplementation("io.mockk:mockk:1.13.13")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core.ktx)
+    testImplementation(libs.mockk)
+    androidTestImplementation(libs.androidx.test.junit)
 }
 ```
 
-**Step 4: Create `gradle.properties`**
+**Step 5: Create `gradle.properties`**
 
 ```properties
 android.useAndroidX=true
@@ -163,7 +223,7 @@ kotlin.code.style=official
 android.nonTransitiveRClass=true
 ```
 
-**Step 5: Create base `AndroidManifest.xml`** at `app/src/main/AndroidManifest.xml`
+**Step 6: Create base `AndroidManifest.xml`** at `app/src/main/AndroidManifest.xml`
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -196,7 +256,7 @@ android.nonTransitiveRClass=true
 </manifest>
 ```
 
-**Step 6: Create `app/src/main/res/values/strings.xml`**
+**Step 7: Create `app/src/main/res/values/strings.xml`**
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -206,7 +266,7 @@ android.nonTransitiveRClass=true
 </resources>
 ```
 
-**Step 7: Create `app/src/main/res/values/themes.xml`**
+**Step 8: Create `app/src/main/res/values/themes.xml`**
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -215,14 +275,14 @@ android.nonTransitiveRClass=true
 </resources>
 ```
 
-**Step 8: Sync and verify project compiles**
+**Step 9: Sync and verify project compiles**
 
 ```bash
 ./gradlew assembleDebug
 ```
 Expected: BUILD SUCCESSFUL (may take a few minutes on first run)
 
-**Step 9: Commit**
+**Step 10: Commit**
 
 ```bash
 git add -A
