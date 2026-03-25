@@ -1,6 +1,10 @@
 # Git worktrees
 .worktrees/
 
+# Signing keystores
+*.jks
+*.keystore
+
 # Android build artifacts
 *.hprof
 .gradle/
