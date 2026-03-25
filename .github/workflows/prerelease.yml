@@ -43,25 +43,22 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: "35.0.0"
 
-      - name: Compute tag name
-        id: tag
-        run: echo "name=nightly-$(date -u +'%Y%m%d')-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
       - name: Rename APK
         id: rename_apk
         run: |
-          RENAMED="simple-weather-${{ steps.tag.outputs.name }}.apk"
+          RENAMED="simple-weather-dev-${GITHUB_SHA::6}.apk"
           mv "${{ steps.sign_app.outputs.signedReleaseFile }}" "$RENAMED"
           echo "apk_path=$RENAMED" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Pre-release
+      - name: Create or update dev pre-release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.rename_apk.outputs.apk_path }}
-          name: Nightly ${{ steps.tag.outputs.name }}
-          tag_name: ${{ steps.tag.outputs.name }}
+          name: Dev Build
+          tag_name: dev
           draft: false
           prerelease: true
+          make_latest: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
