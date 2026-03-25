@@ -2,6 +2,7 @@ package com.wassupluke.simpleweather.data
 
 import android.content.Context
 import android.graphics.Color as AndroidColor
+import android.os.Build
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
@@ -18,6 +19,12 @@ private val extendedColorNames = mapOf(
     "lavender" to "#E6E6FA",
     "indigo" to "#4B0082"
 )
+
+fun Preferences.resolveDynamicColor(): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
+    val stored = this[WeatherDataStore.WIDGET_DYNAMIC_COLOR]
+    return stored ?: (this[WeatherDataStore.WIDGET_TEXT_COLOR] == null)
+}
 
 fun parseColorSafe(colorString: String): Int? {
     val resolved = extendedColorNames[colorString.trim().lowercase()] ?: colorString

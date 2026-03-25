@@ -2,7 +2,6 @@ package com.wassupluke.simpleweather.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,6 +21,7 @@ import androidx.glance.unit.ColorProvider
 import com.wassupluke.simpleweather.data.WeatherDataStore
 import com.wassupluke.simpleweather.data.dataStore
 import com.wassupluke.simpleweather.data.parseColorSafe
+import com.wassupluke.simpleweather.data.resolveDynamicColor
 import com.wassupluke.simpleweather.ui.MainActivity
 import kotlin.math.roundToInt
 
@@ -34,8 +34,7 @@ class WeatherWidget : GlanceAppWidget() {
                 val tempCelsius = prefs[WeatherDataStore.LAST_TEMP_CELSIUS]
                 val unit = prefs[WeatherDataStore.TEMP_UNIT] ?: "C"
                 val colorString = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white"
-                val storedDynamic = prefs[WeatherDataStore.WIDGET_DYNAMIC_COLOR]
-                val dynamicColor = storedDynamic ?: (prefs[WeatherDataStore.WIDGET_TEXT_COLOR] == null)
+                val dynamicColor = prefs.resolveDynamicColor()
 
                 val displayTemp = if (tempCelsius == null) {
                     "--°"
@@ -44,22 +43,18 @@ class WeatherWidget : GlanceAppWidget() {
                     "$value°"
                 }
 
-                val textColorProvider: ColorProvider = when {
-                    dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-                        GlanceTheme.colors.onBackground
-                    dynamicColor ->
-                        ColorProvider(Color.White)
-                    else -> {
-                        val resolved = parseColorSafe(colorString)?.let { argb ->
-                            Color(
-                                red = android.graphics.Color.red(argb) / 255f,
-                                green = android.graphics.Color.green(argb) / 255f,
-                                blue = android.graphics.Color.blue(argb) / 255f,
-                                alpha = android.graphics.Color.alpha(argb) / 255f
-                            )
-                        } ?: Color.White
-                        ColorProvider(resolved)
-                    }
+                val textColorProvider: ColorProvider = if (dynamicColor) {
+                    GlanceTheme.colors.onBackground
+                } else {
+                    val resolved = parseColorSafe(colorString)?.let { argb ->
+                        Color(
+                            red = android.graphics.Color.red(argb) / 255f,
+                            green = android.graphics.Color.green(argb) / 255f,
+                            blue = android.graphics.Color.blue(argb) / 255f,
+                            alpha = android.graphics.Color.alpha(argb) / 255f
+                        )
+                    } ?: Color.White
+                    ColorProvider(resolved)
                 }
 
                 val tapPackage = prefs[WeatherDataStore.WIDGET_TAP_PACKAGE]

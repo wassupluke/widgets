@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.wassupluke.simpleweather.data.WeatherDataStore
 import com.wassupluke.simpleweather.data.WeatherRepository
 import com.wassupluke.simpleweather.data.dataStore
+import com.wassupluke.simpleweather.data.resolveDynamicColor
 import androidx.glance.appwidget.updateAll
 import com.wassupluke.simpleweather.widget.WeatherWidget
 import com.wassupluke.simpleweather.worker.WorkScheduler
@@ -35,8 +36,6 @@ class SettingsViewModel(
     private val context: Application = application
 
     private fun prefsToUiState(prefs: androidx.datastore.preferences.core.Preferences): SettingsUiState {
-        val storedDynamic = prefs[WeatherDataStore.WIDGET_DYNAMIC_COLOR]
-        val dynamicColor = storedDynamic ?: (prefs[WeatherDataStore.WIDGET_TEXT_COLOR] == null)
         return SettingsUiState(
             useDeviceLocation = prefs[WeatherDataStore.USE_DEVICE_LOCATION] ?: false,
             locationQuery = prefs[WeatherDataStore.LOCATION_QUERY] ?: "",
@@ -44,7 +43,7 @@ class SettingsViewModel(
             tempUnit = prefs[WeatherDataStore.TEMP_UNIT] ?: WeatherDataStore.DEFAULT_TEMP_UNIT,
             updateIntervalMinutes = prefs[WeatherDataStore.UPDATE_INTERVAL_MINUTES] ?: WeatherDataStore.DEFAULT_INTERVAL_MINUTES,
             widgetTextColor = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white",
-            widgetDynamicColor = dynamicColor,
+            widgetDynamicColor = prefs.resolveDynamicColor(),
             widgetTapPackage = prefs[WeatherDataStore.WIDGET_TAP_PACKAGE] ?: ""
         )
     }
