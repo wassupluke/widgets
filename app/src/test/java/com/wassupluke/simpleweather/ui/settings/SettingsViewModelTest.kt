@@ -1,13 +1,16 @@
 package com.wassupluke.simpleweather.ui.settings
 
 import android.app.Application
+import android.os.Build
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
+import com.wassupluke.simpleweather.data.WeatherDataStore
 import com.wassupluke.simpleweather.data.WeatherRepository
 import com.wassupluke.simpleweather.data.dataStore
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.junit.Assume.assumeTrue
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -101,5 +104,38 @@ class SettingsViewModelTest {
         advanceUntilIdle()
         val state = vm.uiState.first()
         assertEquals("", state.widgetTapPackage)
+    }
+
+    @Test
+    fun `widgetDynamicColor defaults to true when both keys absent (new install)`() = runTest(testDispatcher) {
+        assumeTrue("dynamic color only supported on API 31+", Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        val vm = SettingsViewModel(application, mockRepository, testDispatcher)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val state = vm.uiState.filter { it.widgetDynamicColor }.first()
+        assertEquals(true, state.widgetDynamicColor)
+    }
+
+    @Test
+    fun `widgetDynamicColor defaults to false when text color already set (existing user)`() = runTest(testDispatcher) {
+        runBlocking {
+            application.dataStore.edit { it[WeatherDataStore.WIDGET_TEXT_COLOR] = "blue" }
+        }
+        val vm = SettingsViewModel(application, mockRepository, testDispatcher)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val state = vm.uiState.filter { !it.widgetDynamicColor }.first()
+        assertEquals(false, state.widgetDynamicColor)
+    }
+
+    @Test
+    fun `setWidgetDynamicColor writes to DataStore`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(application, mockRepository, testDispatcher)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.setWidgetDynamicColor(false)
+        advanceUntilIdle()
+        val state = vm.uiState.filter { !it.widgetDynamicColor }.first()
+        assertEquals(false, state.widgetDynamicColor)
     }
 }
