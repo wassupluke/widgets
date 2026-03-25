@@ -65,6 +65,7 @@ internal fun SettingsScreenContent(
     onSetUpdateInterval: (Int) -> Unit,
     onSetWidgetTextColor: (String) -> Unit,
     onSetWidgetTapPackage: (String) -> Unit,
+    onSetWidgetDynamicColor: (Boolean) -> Unit,
 ) {
     var locationInput by remember { mutableStateOf("") }
     var locationInputInitialized by remember { mutableStateOf(false) }
@@ -221,54 +222,71 @@ internal fun SettingsScreenContent(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Text(stringResource(R.string.title_widget_text_color), style = MaterialTheme.typography.titleSmall)
-
-            var colorInput by remember { mutableStateOf(uiState.widgetTextColor) }
-            LaunchedEffect(uiState.widgetTextColor) { colorInput = uiState.widgetTextColor }
-
-            val previewColor = remember(uiState.widgetTextColor) {
-                parseColorSafe(uiState.widgetTextColor)?.let { argb ->
-                    Color(
-                        red = android.graphics.Color.red(argb) / 255f,
-                        green = android.graphics.Color.green(argb) / 255f,
-                        blue = android.graphics.Color.blue(argb) / 255f,
-                        alpha = android.graphics.Color.alpha(argb) / 255f
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSetWidgetDynamicColor(!uiState.widgetDynamicColor) }
+                ) {
+                    Text(stringResource(R.string.label_dynamic_color), modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = uiState.widgetDynamicColor,
+                        onCheckedChange = { onSetWidgetDynamicColor(it) }
                     )
                 }
             }
 
-            OutlinedTextField(
-                value = colorInput,
-                onValueChange = { colorInput = it },
-                label = { Text(stringResource(R.string.label_text_color)) },
-                placeholder = { Text(stringResource(R.string.hint_color_input)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    onSetWidgetTextColor(colorInput.trim())
-                }),
-                trailingIcon = {
-                    if (colorInput.isNotBlank()) {
-                        SetButton { onSetWidgetTextColor(colorInput.trim()) }
+            if (!uiState.widgetDynamicColor) {
+                Text(stringResource(R.string.title_widget_text_color), style = MaterialTheme.typography.titleSmall)
+
+                var colorInput by remember { mutableStateOf(uiState.widgetTextColor) }
+                LaunchedEffect(uiState.widgetTextColor) { colorInput = uiState.widgetTextColor }
+
+                val previewColor = remember(uiState.widgetTextColor) {
+                    parseColorSafe(uiState.widgetTextColor)?.let { argb ->
+                        Color(
+                            red = android.graphics.Color.red(argb) / 255f,
+                            green = android.graphics.Color.green(argb) / 255f,
+                            blue = android.graphics.Color.blue(argb) / 255f,
+                            alpha = android.graphics.Color.alpha(argb) / 255f
+                        )
                     }
                 }
-            )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .background(previewColor ?: MaterialTheme.colorScheme.errorContainer)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
-            )
-
-            if (previewColor == null && uiState.widgetTextColor.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.error_invalid_color),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
+                OutlinedTextField(
+                    value = colorInput,
+                    onValueChange = { colorInput = it },
+                    label = { Text(stringResource(R.string.label_text_color)) },
+                    placeholder = { Text(stringResource(R.string.hint_color_input)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        onSetWidgetTextColor(colorInput.trim())
+                    }),
+                    trailingIcon = {
+                        if (colorInput.isNotBlank()) {
+                            SetButton { onSetWidgetTextColor(colorInput.trim()) }
+                        }
+                    }
                 )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .background(previewColor ?: MaterialTheme.colorScheme.errorContainer)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
+                )
+
+                if (previewColor == null && uiState.widgetTextColor.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.error_invalid_color),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -430,6 +448,7 @@ fun SettingsScreen(
         onSetUpdateInterval = { viewModel.setUpdateInterval(it) },
         onSetWidgetTextColor = { viewModel.setWidgetTextColor(it) },
         onSetWidgetTapPackage = { viewModel.setWidgetTapPackage(it) },
+        onSetWidgetDynamicColor = { viewModel.setWidgetDynamicColor(it) },
     )
 }
 
@@ -456,6 +475,7 @@ private fun SettingsScreenEmptyPreview() {
             onSetUpdateInterval = {},
             onSetWidgetTextColor = {},
             onSetWidgetTapPackage = {},
+            onSetWidgetDynamicColor = {},
         )
     }
 }
@@ -476,6 +496,7 @@ private fun SettingsScreenDeviceLocationPreview() {
             onSetUpdateInterval = {},
             onSetWidgetTextColor = {},
             onSetWidgetTapPackage = {},
+            onSetWidgetDynamicColor = {},
         )
     }
 }
@@ -500,6 +521,7 @@ private fun SettingsScreenManualLocationPreview() {
             onSetUpdateInterval = {},
             onSetWidgetTextColor = {},
             onSetWidgetTapPackage = {},
+            onSetWidgetDynamicColor = {},
         )
     }
 }
