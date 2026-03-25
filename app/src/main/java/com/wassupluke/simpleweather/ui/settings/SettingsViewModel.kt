@@ -14,7 +14,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+
 
 data class SettingsUiState(
     val useDeviceLocation: Boolean = false,
@@ -49,13 +49,9 @@ class SettingsViewModel(
         )
     }
 
-    private val initialUiState: SettingsUiState = runBlocking {
-        prefsToUiState(context.dataStore.data.first())
-    }
-
     val uiState: StateFlow<SettingsUiState> = context.dataStore.data.map { prefs ->
         prefsToUiState(prefs)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initialUiState)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     fun setTempUnit(unit: String) {
         viewModelScope.launch(dispatcher) {

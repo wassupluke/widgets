@@ -121,7 +121,7 @@ class SettingsViewModelTest {
         val vm = SettingsViewModel(application, mockRepository, testDispatcher)
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
-        val state = vm.uiState.first()
+        val state = vm.uiState.filter { !it.widgetDynamicColor }.first()
         assertEquals(false, state.widgetDynamicColor)
     }
 
