@@ -26,6 +26,7 @@ Pushing any `v*` tag triggers `.github/workflows/release.yml`, which builds, sig
 
 ## Wishlist (deferred features)
 
-- Tapping widget can launch the user's choice of weather app
-- Widget: condition icon, high/low temperatures, font picker
-- v2: Room + Hilt migration, temperature trend sparkline widget (12/24hr graph)
+- [x] Tapping widget can launch the user's choice of weather app
+- [x] Ability to lock in a typed setting (e.g., location or text color) by hitting Return/ Enter
+- [] Widget: condition icon, high/low temperatures, font picker
+- [] v2: Room + Hilt migration, temperature trend sparkline widget (12/24hr graph)
