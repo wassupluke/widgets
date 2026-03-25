@@ -41,6 +41,8 @@ import com.wassupluke.simpleweather.ui.theme.SimpleWeatherTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+private data class AppEntry(val pkg: String, val label: String, val icon: ImageBitmap?)
+
 @Composable
 private fun SetButton(onClick: () -> Unit) {
     Button(
@@ -76,7 +78,7 @@ internal fun SettingsScreenContent(
     var showAppPicker by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val installedApps by produceState<List<android.content.pm.ResolveInfo>>(emptyList()) {
+    val installedApps by produceState<List<AppEntry>>(emptyList()) {
         value = withContext(Dispatchers.IO) {
             val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             val apps = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -89,6 +91,16 @@ internal fun SettingsScreenContent(
                 context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_ALL)
             }
             apps.sortedBy { it.loadLabel(context.packageManager).toString() }
+                .map { resolveInfo ->
+                    val pkg = resolveInfo.activityInfo.applicationInfo.packageName
+                    AppEntry(
+                        pkg = pkg,
+                        label = resolveInfo.loadLabel(context.packageManager).toString(),
+                        icon = runCatching {
+                            context.packageManager.getApplicationIcon(pkg).toBitmap().asImageBitmap()
+                        }.getOrNull()
+                    )
+                }
         }
     }
 
@@ -329,40 +341,53 @@ internal fun SettingsScreenContent(
             if (showAppPicker) {
                 ModalBottomSheet(onDismissRequest = { showAppPicker = false }) {
                     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
-                        items(installedApps) { resolveInfo ->
-                            val pkg = resolveInfo.activityInfo.applicationInfo.packageName
-                            val label = resolveInfo.loadLabel(context.packageManager).toString()
-                            val appIcon by produceState<ImageBitmap?>(null, pkg) {
-                                value = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        context.packageManager
-                                            .getApplicationIcon(pkg)
-                                            .toBitmap()
-                                            .asImageBitmap()
-                                    }.getOrNull()
-                                }
-                            }
+                        item {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onSetWidgetTapPackage(pkg)
+                                        onSetWidgetTapPackage("")
                                         showAppPicker = false
                                     }
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
-                                if (appIcon != null) {
+                                Spacer(Modifier.size(40.dp).padding(end = 12.dp))
+                                Text(
+                                    text = stringResource(R.string.label_widget_tap_none),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (uiState.widgetTapPackage.isEmpty()) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                        items(installedApps) { entry ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onSetWidgetTapPackage(entry.pkg)
+                                        showAppPicker = false
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                if (entry.icon != null) {
                                     Image(
-                                        bitmap = appIcon!!,
+                                        bitmap = entry.icon,
                                         contentDescription = null,
                                         modifier = Modifier.size(40.dp).padding(end = 12.dp)
                                     )
                                 } else {
                                     Spacer(Modifier.size(40.dp).padding(end = 12.dp))
                                 }
-                                Text(label, modifier = Modifier.weight(1f))
-                                if (pkg == uiState.widgetTapPackage) {
+                                Text(entry.label, modifier = Modifier.weight(1f))
+                                if (entry.pkg == uiState.widgetTapPackage) {
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
