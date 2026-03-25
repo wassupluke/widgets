@@ -1,6 +1,15 @@
 # Git worktrees
 .worktrees/
 
+# Android build artifacts
+*.hprof
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+
 # Compiled class file
 *.class
 
