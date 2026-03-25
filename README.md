@@ -7,19 +7,22 @@ A minimal Android weather app (Kotlin + Jetpack Compose + Material3) whose prima
 
 ## Releases
 
-For a release:
+**Always tag after the PR merges on GitHub.** GitHub signs merge commits automatically, so tagging the merged commit produces a "Verified" release without any local GPG/SSH setup.
 
-```
-git tag -a v0.0.1 -m "Initial release"
-git push origin v0.0.1
+```bash
+# After merging on GitHub:
+git checkout main && git pull
+
+# Stable release
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# Pre-release (alpha/beta — triggers release workflow, marked as pre-release)
+git tag -a v1.0.0-alpha -m "Pre-release v1.0.0-alpha"
+git push origin v1.0.0-alpha
 ```
 
-For a pre-release:
-
-```
-git tag -a v0.0.1-alpha -m "Initial release"
-git push origin v0.0.1-alpha
-```
+Pushing any `v*` tag triggers `.github/workflows/release.yml`, which builds, signs, and publishes the APK. Tags containing a hyphen (e.g. `-alpha`, `-beta`) are automatically marked as pre-releases.
 
 ## Wishlist (deferred features)
 
