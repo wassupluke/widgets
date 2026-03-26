@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A minimal Android weather app (Kotlin + Jetpack Compose + Material3) whose primary value is a home screen widget displaying the current temperature. Open-Meteo is used for weather and geocoding (no API key required). Implementation lives in the `.worktrees/feature-initial-build` git worktree.
+A minimal Android weather app (Kotlin + Jetpack Compose + Material3) whose primary value is a home screen widget displaying the current temperature. Open-Meteo is used for weather and geocoding (no API key required).
 
 ## Architecture
 
@@ -30,10 +30,14 @@ WorkManager (periodic) ──→ WeatherRepository ──→ Open-Meteo API
 - `SettingsScreen` accepts `onLocationPermissionGranted: (() -> Unit)?` — do not cast `LocalContext` to `MainActivity`; pass the callback from the call site
 - `MainActivity.onCreate` uses `lifecycleScope.launch(Dispatchers.IO)` for the WorkManager init block — never use a bare `CoroutineScope` here (leaks on Activity recreation)
 - `WorkScheduler.schedule` is only called when `LOCATION_LAT` and `LOCATION_LON` are both present in DataStore — guard this in any new call sites
+- `WeatherWidget` is wrapped in `GlanceTheme`; uses `GlanceTheme.colors.primary` for temp text when dynamic color is on, else a static `ColorProvider`
+- `Preferences.resolveDynamicColor()` extension in `WeatherDataStore.kt` — returns `false` on pre-API 31 regardless of stored value
+- New DataStore keys: `WIDGET_TAP_PACKAGE` (string) — package name of app to launch on widget tap; `WIDGET_DYNAMIC_COLOR` (boolean)
+- Widget tap uses a `startActivity` `Action`; empty/null `WIDGET_TAP_PACKAGE` means no tap action
 
 ## Build & Test Commands
 
-Run all commands from the worktree root: `.worktrees/feature-initial-build/`
+Run all commands from the repo root.
 
 ```bash
 # Build
@@ -46,7 +50,7 @@ Run all commands from the worktree root: `.worktrees/feature-initial-build/`
 ./gradlew :app:testDebugUnitTest
 
 # Run a specific test class
-./gradlew :app:testDebugUnitTest --tests "com.example.simpleweather.data.WeatherRepositoryTest"
+./gradlew :app:testDebugUnitTest --tests "com.wassupluke.simpleweather.data.WeatherRepositoryTest"
 ```
 
 Note: `./gradlew :app:test` is not supported — use `:app:testDebugUnitTest`. All unit tests use Robolectric (no emulator needed).
@@ -54,9 +58,9 @@ Note: `./gradlew :app:test` is not supported — use `:app:testDebugUnitTest`. A
 ## Package Structure
 
 ```
-com.example.simpleweather
+com.wassupluke.simpleweather
 ├── data/
-│   ├── WeatherDataStore.kt       # DataStore keys + Context.dataStore extension
+│   ├── WeatherDataStore.kt       # DataStore keys + Context.dataStore extension; resolveDynamicColor()
 │   ├── WeatherRepository.kt      # fetchAndCacheWeather(), geocodeLocation()
 │   └── api/
 │       ├── WeatherApiModels.kt   # @Serializable data classes
@@ -67,9 +71,9 @@ com.example.simpleweather
 │   ├── theme/SimpleWeatherTheme.kt
 │   └── settings/
 │       ├── SettingsViewModel.kt  # StateFlow<SettingsUiState> from DataStore
-│       └── SettingsScreen.kt     # Compose UI: location toggle, F/C selector, interval picker
+│       └── SettingsScreen.kt     # Compose UI: location toggle, F/C selector, interval picker, dynamic color toggle, app picker
 ├── widget/
-│   ├── WeatherWidget.kt          # GlanceAppWidget; reads DataStore with .first()
+│   ├── WeatherWidget.kt          # GlanceAppWidget wrapped in GlanceTheme; tap-to-launch; dynamic color
 │   └── WeatherWidgetReceiver.kt  # GlanceAppWidgetReceiver
 └── worker/
     ├── WeatherFetchWorker.kt     # CoroutineWorker; Result.failure() if no location
