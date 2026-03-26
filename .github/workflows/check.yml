@@ -6,8 +6,14 @@ permissions:
 on:
   push:
     branches: [ main ]
+    paths: &paths
+      - 'app/**'
+      - '*.gradle.kts'
+      - 'gradle/**'
+      - '.github/workflows/dev-release.yml'
   pull_request:
     branches: [ main ]
+    paths: *paths
 
 jobs:
   check:
