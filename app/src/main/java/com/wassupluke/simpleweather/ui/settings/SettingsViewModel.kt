@@ -9,6 +9,7 @@ import com.wassupluke.simpleweather.data.WeatherRepository
 import com.wassupluke.simpleweather.data.dataStore
 import com.wassupluke.simpleweather.data.resolveDynamicColor
 import androidx.glance.appwidget.updateAll
+import com.wassupluke.simpleweather.widget.AlarmWidget
 import com.wassupluke.simpleweather.widget.WeatherWidget
 import com.wassupluke.simpleweather.worker.WorkScheduler
 import kotlinx.coroutines.CoroutineDispatcher
@@ -25,7 +26,9 @@ data class SettingsUiState(
     val updateIntervalMinutes: Int = WeatherDataStore.DEFAULT_INTERVAL_MINUTES,
     val widgetTextColor: String = "white",
     val widgetDynamicColor: Boolean = false,
-    val widgetTapPackage: String = ""
+    val widgetTapPackage: String = "",
+    val fontSize: Int = WeatherDataStore.DEFAULT_FONT_SIZE,
+    val alarmWidgetTapPackage: String = ""
 )
 
 class SettingsViewModel(
@@ -44,7 +47,9 @@ class SettingsViewModel(
             updateIntervalMinutes = prefs[WeatherDataStore.UPDATE_INTERVAL_MINUTES] ?: WeatherDataStore.DEFAULT_INTERVAL_MINUTES,
             widgetTextColor = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white",
             widgetDynamicColor = prefs.resolveDynamicColor(),
-            widgetTapPackage = prefs[WeatherDataStore.WIDGET_TAP_PACKAGE] ?: ""
+            widgetTapPackage = prefs[WeatherDataStore.WIDGET_TAP_PACKAGE] ?: "",
+            fontSize = prefs[WeatherDataStore.FONT_SIZE] ?: WeatherDataStore.DEFAULT_FONT_SIZE,
+            alarmWidgetTapPackage = prefs[WeatherDataStore.ALARM_WIDGET_TAP_PACKAGE] ?: ""
         )
     }
 
@@ -70,6 +75,7 @@ class SettingsViewModel(
         viewModelScope.launch(dispatcher) {
             context.dataStore.edit { it[WeatherDataStore.WIDGET_TEXT_COLOR] = raw }
             WeatherWidget().updateAll(context)
+            AlarmWidget().updateAll(context)
         }
     }
 
@@ -77,6 +83,7 @@ class SettingsViewModel(
         viewModelScope.launch(dispatcher) {
             context.dataStore.edit { it[WeatherDataStore.WIDGET_DYNAMIC_COLOR] = enabled }
             WeatherWidget().updateAll(context)
+            AlarmWidget().updateAll(context)
         }
     }
 
@@ -84,6 +91,21 @@ class SettingsViewModel(
         viewModelScope.launch(dispatcher) {
             context.dataStore.edit { it[WeatherDataStore.WIDGET_TAP_PACKAGE] = pkg }
             WeatherWidget().updateAll(context)
+        }
+    }
+
+    fun setFontSize(size: Int) {
+        viewModelScope.launch(dispatcher) {
+            context.dataStore.edit { it[WeatherDataStore.FONT_SIZE] = size }
+            WeatherWidget().updateAll(context)
+            AlarmWidget().updateAll(context)
+        }
+    }
+
+    fun setAlarmWidgetTapPackage(pkg: String) {
+        viewModelScope.launch(dispatcher) {
+            context.dataStore.edit { it[WeatherDataStore.ALARM_WIDGET_TAP_PACKAGE] = pkg }
+            AlarmWidget().updateAll(context)
         }
     }
 

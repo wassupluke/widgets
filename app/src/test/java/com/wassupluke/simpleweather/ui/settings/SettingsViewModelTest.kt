@@ -138,4 +138,35 @@ class SettingsViewModelTest {
         val state = vm.uiState.filter { !it.widgetDynamicColor }.first()
         assertEquals(false, state.widgetDynamicColor)
     }
+
+    @Test
+    fun `setFontSize writes to DataStore`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(application, mockRepository, testDispatcher)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.setFontSize(32)
+        advanceUntilIdle()
+        val state = vm.uiState.filter { it.fontSize == 32 }.first()
+        assertEquals(32, state.fontSize)
+    }
+
+    @Test
+    fun `setAlarmWidgetTapPackage writes to DataStore`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(application, mockRepository, testDispatcher)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.setAlarmWidgetTapPackage("com.example.clock")
+        advanceUntilIdle()
+        val state = vm.uiState.filter { it.alarmWidgetTapPackage == "com.example.clock" }.first()
+        assertEquals("com.example.clock", state.alarmWidgetTapPackage)
+    }
+
+    @Test
+    fun `fontSize defaults to 48`() = runTest(testDispatcher) {
+        val vm = SettingsViewModel(application, mockRepository, testDispatcher)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val state = vm.uiState.filter { it.fontSize == 48 }.first()
+        assertEquals(48, state.fontSize)
+    }
 }
