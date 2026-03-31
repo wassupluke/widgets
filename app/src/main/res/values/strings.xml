@@ -24,6 +24,11 @@
 
     <string name="action_set">Set</string>
 
+    <string name="title_font_size">Widget font size</string>
+    <string name="title_alarm_widget">Alarm widget</string>
+    <string name="title_alarm_widget_tap_action">Alarm widget tap action</string>
+    <string name="alarm_widget_description">Simple Alarm Widget</string>
+
     <string name="title_widget_tap_action">Widget tap action</string>
     <string name="label_widget_tap_none">None (opens Simple Weather)</string>
     <string name="label_selected_app_not_found">Selected app not found</string>
