@@ -441,11 +441,6 @@ internal fun SettingsScreenContent(
 
             Text(stringResource(R.string.title_alarm_widget), style = MaterialTheme.typography.titleSmall)
 
-            Text(
-                stringResource(R.string.title_alarm_widget_tap_action),
-                style = MaterialTheme.typography.titleSmall
-            )
-
             val selectedAlarmAppInfo = remember(uiState.alarmWidgetTapPackage) {
                 if (uiState.alarmWidgetTapPackage.isEmpty()) null
                 else runCatching {
