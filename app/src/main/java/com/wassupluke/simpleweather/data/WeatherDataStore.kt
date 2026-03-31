@@ -53,4 +53,9 @@ object WeatherDataStore {
     val WIDGET_TEXT_COLOR = stringPreferencesKey("widget_text_color")
     val WIDGET_TAP_PACKAGE = stringPreferencesKey("widget_tap_package")
     val WIDGET_DYNAMIC_COLOR = booleanPreferencesKey("widget_dynamic_color")
+    val FONT_SIZE = intPreferencesKey("font_size")
+    val ALARM_WIDGET_TAP_PACKAGE = stringPreferencesKey("alarm_widget_tap_package")
+    val ALARM_TEXT = stringPreferencesKey("alarm_text")
+
+    const val DEFAULT_FONT_SIZE = 48
 }
