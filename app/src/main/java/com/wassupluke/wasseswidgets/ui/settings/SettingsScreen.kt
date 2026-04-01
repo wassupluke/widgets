@@ -120,7 +120,7 @@ internal fun SettingsScreenContent(
         ) {
             Spacer(Modifier.height(8.dp))
 
-            Text(stringResource(R.string.title_location), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_location_title), style = MaterialTheme.typography.titleSmall)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -130,7 +130,7 @@ internal fun SettingsScreenContent(
                         else onDisableDeviceLocation()
                     }
             ) {
-                Text(stringResource(R.string.label_use_device_location), modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.settings_location_device_label), modifier = Modifier.weight(1f))
                 Switch(
                     checked = uiState.useDeviceLocation,
                     onCheckedChange = { use ->
@@ -143,7 +143,7 @@ internal fun SettingsScreenContent(
                 OutlinedTextField(
                     value = locationInput,
                     onValueChange = { locationInput = it },
-                    label = { Text(stringResource(R.string.hint_location_input)) },
+                    label = { Text(stringResource(R.string.settings_location_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -167,7 +167,7 @@ internal fun SettingsScreenContent(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Text(stringResource(R.string.title_temperature_unit), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_temperature_unit_title), style = MaterialTheme.typography.titleSmall)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 listOf("C", "F").forEachIndexed { index, unit ->
                     SegmentedButton(
@@ -181,17 +181,17 @@ internal fun SettingsScreenContent(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Text(stringResource(R.string.title_update_interval), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_update_interval_title), style = MaterialTheme.typography.titleSmall)
 
             val intervalOptions = listOf(
-                15 to stringResource(R.string.interval_15min),
-                30 to stringResource(R.string.interval_30min),
-                60 to stringResource(R.string.interval_1hr),
-                180 to stringResource(R.string.interval_3hr),
-                360 to stringResource(R.string.interval_6hr)
+                15 to stringResource(R.string.settings_interval_15min),
+                30 to stringResource(R.string.settings_interval_30min),
+                60 to stringResource(R.string.settings_interval_1hr),
+                180 to stringResource(R.string.settings_interval_3hr),
+                360 to stringResource(R.string.settings_interval_6hr)
             )
             var intervalExpanded by remember { mutableStateOf(false) }
-            val selectedLabel = intervalOptions.firstOrNull { it.first == uiState.updateIntervalMinutes }?.second ?: stringResource(R.string.interval_1hr)
+            val selectedLabel = intervalOptions.firstOrNull { it.first == uiState.updateIntervalMinutes }?.second ?: stringResource(R.string.settings_interval_1hr)
 
             ExposedDropdownMenuBox(
                 expanded = intervalExpanded,
@@ -201,7 +201,7 @@ internal fun SettingsScreenContent(
                     value = selectedLabel,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text(stringResource(R.string.label_interval)) },
+                    label = { Text(stringResource(R.string.settings_interval_label)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = intervalExpanded) },
                     modifier = Modifier
                         .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -232,7 +232,7 @@ internal fun SettingsScreenContent(
                         .fillMaxWidth()
                         .clickable { onSetWidgetDynamicColor(!uiState.widgetDynamicColor) }
                 ) {
-                    Text(stringResource(R.string.label_dynamic_color), modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.settings_dynamic_color_label), modifier = Modifier.weight(1f))
                     Switch(
                         checked = uiState.widgetDynamicColor,
                         onCheckedChange = { onSetWidgetDynamicColor(it) }
@@ -241,7 +241,7 @@ internal fun SettingsScreenContent(
             }
 
             if (!uiState.widgetDynamicColor) {
-                Text(stringResource(R.string.title_widget_text_color), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_text_color_title), style = MaterialTheme.typography.titleSmall)
 
                 var colorInput by remember { mutableStateOf(uiState.widgetTextColor) }
                 LaunchedEffect(uiState.widgetTextColor) { colorInput = uiState.widgetTextColor }
@@ -260,8 +260,8 @@ internal fun SettingsScreenContent(
                 OutlinedTextField(
                     value = colorInput,
                     onValueChange = { colorInput = it },
-                    label = { Text(stringResource(R.string.label_text_color)) },
-                    placeholder = { Text(stringResource(R.string.hint_color_input)) },
+                    label = { Text(stringResource(R.string.settings_text_color_label)) },
+                    placeholder = { Text(stringResource(R.string.settings_color_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -285,7 +285,7 @@ internal fun SettingsScreenContent(
 
                 if (previewColor == null && uiState.widgetTextColor.isNotEmpty()) {
                     Text(
-                        text = stringResource(R.string.error_invalid_color),
+                        text = stringResource(R.string.settings_color_error),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -294,7 +294,7 @@ internal fun SettingsScreenContent(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Text(stringResource(R.string.title_font_size), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_font_size_title), style = MaterialTheme.typography.titleSmall)
             Slider(
                 value = uiState.fontSize.toFloat(),
                 onValueChange = { onSetFontSize(it.toInt()) },
@@ -311,7 +311,7 @@ internal fun SettingsScreenContent(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             Text(
-                stringResource(R.string.title_widget_tap_action),
+                stringResource(R.string.settings_weather_tap_title),
                 style = MaterialTheme.typography.titleSmall
             )
 
@@ -356,14 +356,14 @@ internal fun SettingsScreenContent(
                 } else if (uiState.widgetTapPackage.isNotEmpty()) {
                     Spacer(Modifier.size(40.dp).padding(end = 8.dp))
                     Text(
-                        text = stringResource(R.string.label_selected_app_not_found),
+                        text = stringResource(R.string.settings_tap_app_missing_label),
                         modifier = Modifier.weight(1f),
                         color = MaterialTheme.colorScheme.error
                     )
                 } else {
                     Spacer(Modifier.size(40.dp).padding(end = 8.dp))
                     Text(
-                        text = stringResource(R.string.label_widget_tap_none),
+                        text = stringResource(R.string.settings_tap_none_label),
                         modifier = Modifier.weight(1f),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -391,7 +391,7 @@ internal fun SettingsScreenContent(
                             ) {
                                 Spacer(Modifier.size(40.dp).padding(end = 12.dp))
                                 Text(
-                                    text = stringResource(R.string.label_widget_tap_none),
+                                    text = stringResource(R.string.settings_tap_none_label),
                                     modifier = Modifier.weight(1f)
                                 )
                                 if (uiState.widgetTapPackage.isEmpty()) {
@@ -439,7 +439,7 @@ internal fun SettingsScreenContent(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Text(stringResource(R.string.title_alarm_widget), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_alarm_tap_title), style = MaterialTheme.typography.titleSmall)
 
             val selectedAlarmAppInfo = remember(uiState.alarmWidgetTapPackage) {
                 if (uiState.alarmWidgetTapPackage.isEmpty()) null
@@ -482,14 +482,14 @@ internal fun SettingsScreenContent(
                 } else if (uiState.alarmWidgetTapPackage.isNotEmpty()) {
                     Spacer(Modifier.size(40.dp).padding(end = 8.dp))
                     Text(
-                        text = stringResource(R.string.label_selected_app_not_found),
+                        text = stringResource(R.string.settings_tap_app_missing_label),
                         modifier = Modifier.weight(1f),
                         color = MaterialTheme.colorScheme.error
                     )
                 } else {
                     Spacer(Modifier.size(40.dp).padding(end = 8.dp))
                     Text(
-                        text = stringResource(R.string.label_widget_tap_none),
+                        text = stringResource(R.string.settings_tap_none_label),
                         modifier = Modifier.weight(1f),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -517,7 +517,7 @@ internal fun SettingsScreenContent(
                             ) {
                                 Spacer(Modifier.size(40.dp).padding(end = 12.dp))
                                 Text(
-                                    text = stringResource(R.string.label_widget_tap_none),
+                                    text = stringResource(R.string.settings_tap_none_label),
                                     modifier = Modifier.weight(1f)
                                 )
                                 if (uiState.alarmWidgetTapPackage.isEmpty()) {
