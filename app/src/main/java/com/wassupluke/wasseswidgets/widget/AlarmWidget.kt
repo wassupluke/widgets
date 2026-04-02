@@ -81,7 +81,7 @@ private fun AlarmWidgetContent(
             Image(
                 provider = ImageProvider(R.drawable.ic_alarm),
                 contentDescription = null,
-                modifier = GlanceModifier.size(fontSize.coerceAtMost(32).dp),
+                modifier = GlanceModifier.size(fontSize.dp),
                 colorFilter = ColorFilter.tint(textColorProvider)
             )
             Spacer(GlanceModifier.width(4.dp))
