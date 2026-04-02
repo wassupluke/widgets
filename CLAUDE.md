@@ -1,94 +1,97 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file orients a new Claude Code session for this repository.
 
 ## Project Overview
 
-A minimal Android weather app (Kotlin + Jetpack Compose + Material3) whose primary value is a home screen widget displaying the current temperature. Open-Meteo is used for weather and geocoding (no API key required).
+Android home-screen widget app (Kotlin + Jetpack Compose + Glance) showing current temperature and next alarm. Open-Meteo provides weather and geocoding (no API key required). No Hilt, no Room.
 
 ## Architecture
 
-**Stack:** Kotlin 2.0.21, Compose BOM 2024.12.01, Glance 1.1.1, WorkManager 2.10, DataStore 1.1, Retrofit 2.11 + kotlinx.serialization, FusedLocationProviderClient. Min SDK 26 / Target SDK 35. No Hilt, no Room.
-
 **Data flow:**
 ```
-WorkManager (periodic) ──→ WeatherRepository ──→ Open-Meteo API
-                                             ↓
-                                        DataStore (cache last reading)
-                                             ↓
-                              SettingsViewModel (UI)
-                              WeatherWidget (reads DataStore directly via .first())
+WorkManager (periodic, CONNECTED) ──→ WeatherRepository ──→ Open-Meteo API
+                                                         ↓
+                                                    DataStore ("weather_settings")
+                                                         ↓
+                                       SettingsViewModel (UI)  /  WeatherWidget (reads via .first())
 ```
 
 **Key design decisions:**
-- `WeatherRepository` takes two separate `OpenMeteoService` instances: `weatherService` (api.open-meteo.com) and `geocodingService` (geocoding-api.open-meteo.com) — both created in `NetworkModule`
-- Retrofit does not support Kotlin default parameter values — all `@Query` params must be passed explicitly at every call site
-- Temperature is always stored as Celsius (`LAST_TEMP_CELSIUS`); F/C conversion happens at display time only
-- `WorkScheduler` uses `enqueueUniquePeriodicWork` with `ExistingPeriodicWorkPolicy.UPDATE` and requires `CONNECTED` network
-- `WeatherFetchWorker` calls `WeatherWidget().updateAll(context)` after a successful fetch
-- `SettingsViewModel` accepts a `CoroutineDispatcher` parameter for testability (inject `testScheduler` in tests, default `Dispatchers.IO` in production)
-- `SettingsScreen` accepts `onLocationPermissionGranted: (() -> Unit)?` — do not cast `LocalContext` to `MainActivity`; pass the callback from the call site
-- `MainActivity.onCreate` uses `lifecycleScope.launch(Dispatchers.IO)` for the WorkManager init block — never use a bare `CoroutineScope` here (leaks on Activity recreation)
-- `WorkScheduler.schedule` is only called when `LOCATION_LAT` and `LOCATION_LON` are both present in DataStore — guard this in any new call sites
-- `WeatherWidget` is wrapped in `GlanceTheme`; uses `GlanceTheme.colors.primary` for temp text when dynamic color is on, else a static `ColorProvider`
-- `Preferences.resolveDynamicColor()` extension in `WeatherDataStore.kt` — returns `false` on pre-API 31 regardless of stored value
-- New DataStore keys: `WIDGET_TAP_PACKAGE` (string) — package name of app to launch on widget tap; `WIDGET_DYNAMIC_COLOR` (boolean)
-- Widget tap uses a `startActivity` `Action`; empty/null `WIDGET_TAP_PACKAGE` means no tap action
+
+1. `WeatherRepository` receives two separate `OpenMeteoService` instances: `weatherService` (api.open-meteo.com) and `geocodingService` (geocoding-api.open-meteo.com) — both wired in `NetworkModule`.
+2. Retrofit does not honour Kotlin default parameter values — all `@Query` params must be passed explicitly at every call site.
+3. Temperature is always stored as Celsius (`LAST_TEMP_CELSIUS`); F/C conversion happens at display time only.
+4. `WorkScheduler.schedule` is guarded: only called when both `LOCATION_LAT` and `LOCATION_LON` are present in DataStore. Uses `ExistingPeriodicWorkPolicy.UPDATE` with a `CONNECTED` network constraint.
+5. `WeatherFetchWorker` calls `WeatherWidget().updateAll(context)` after a successful fetch.
+6. `SettingsViewModel` accepts a `CoroutineDispatcher` for testability (default `Dispatchers.IO`; inject `StandardTestDispatcher` in tests).
+7. `MainActivity.onCreate` launches WorkManager init with `lifecycleScope.launch(Dispatchers.IO)` — never use a bare `CoroutineScope` (leaks on Activity recreation).
+8. Both widgets are wrapped in `GlanceTheme`. When dynamic color is on, use `GlanceTheme.colors.primary` for text; otherwise use a static `ColorProvider`. `Preferences.resolveDynamicColor()` in `WeatherDataStore.kt` always returns `false` on pre-API 31.
+9. Widget tap uses a `startActivity` Action. An empty/null `WIDGET_TAP_PACKAGE` (or `ALARM_WIDGET_TAP_PACKAGE`) falls back to launching `MainActivity`.
+10. **Glance layout isolation (critical):** Never share a `@Composable` root scaffold across multiple `GlanceAppWidget` subclasses. Glance can assign the same layout resource ID to different widgets, causing content bleed. Each widget's Content composable must own its full `Box(fillMaxSize) > Box(clickable)` scaffold independently.
+11. `AlarmWidgetReceiver` calls `goAsync()` for all broadcasts **except** `ACTION_APPWIDGET_UPDATE` (Glance's base class already calls `goAsync` internally for that action).
 
 ## Build & Test Commands
 
 Run all commands from the repo root.
 
-```bash
-# Build
-./gradlew assembleDebug
+| Command | Purpose |
+|-|-|
+| `./gradlew assembleDebug` | Full debug build |
+| `./gradlew :app:compileDebugKotlin` | Compile-check only (faster) |
+| `./gradlew :app:testDebugUnitTest` | All unit tests |
+| `./gradlew :app:testDebugUnitTest --tests "com.wassupluke.widgets.data.WeatherRepositoryTest"` | Single test class |
 
-# Compile-check only (faster)
-./gradlew :app:compileDebugKotlin
-
-# Run all unit tests
-./gradlew :app:testDebugUnitTest
-
-# Run a specific test class
-./gradlew :app:testDebugUnitTest --tests "com.wassupluke.simpleweather.data.WeatherRepositoryTest"
-```
-
-Note: `./gradlew :app:test` is not supported — use `:app:testDebugUnitTest`. All unit tests use Robolectric (no emulator needed).
+`./gradlew :app:test` is not supported. All unit tests use Robolectric — no emulator needed.
 
 ## Package Structure
 
 ```
-com.wassupluke.simpleweather
+com.wassupluke.widgets
 ├── data/
-│   ├── WeatherDataStore.kt       # DataStore keys + Context.dataStore extension; resolveDynamicColor()
-│   ├── WeatherRepository.kt      # fetchAndCacheWeather(), geocodeLocation()
+│   ├── WeatherDataStore.kt        # DataStore keys + Context.dataStore extension; resolveDynamicColor(); parseColorSafe()
+│   ├── WeatherRepository.kt       # fetchAndCacheWeather(), reverseGeocodeLocation(), geocodeLocation(); companion .create()
 │   └── api/
-│       ├── WeatherApiModels.kt   # @Serializable data classes
-│       ├── OpenMeteoService.kt   # Retrofit interface (no default param values)
-│       └── NetworkModule.kt      # Two Retrofit instances (weather + geocoding)
+│       ├── WeatherApiModels.kt    # @Serializable data classes
+│       ├── OpenMeteoService.kt    # Retrofit interface (no default param values)
+│       └── NetworkModule.kt       # Two Retrofit+OkHttp instances (weather + geocoding)
 ├── ui/
-│   ├── MainActivity.kt           # Manual ViewModelProvider.Factory; fetchAndSaveDeviceLocation()
+│   ├── MainActivity.kt            # Manual ViewModelProvider.Factory; WorkManager init on Dispatchers.IO; fetchAndSaveDeviceLocation()
 │   ├── theme/SimpleWeatherTheme.kt
 │   └── settings/
-│       ├── SettingsViewModel.kt  # StateFlow<SettingsUiState> from DataStore
-│       └── SettingsScreen.kt     # Compose UI: location toggle, F/C selector, interval picker, dynamic color toggle, app picker
+│       ├── SettingsViewModel.kt   # StateFlow<SettingsUiState> from DataStore; dispatcher injection
+│       └── SettingsScreen.kt      # App picker; color/font/tap controls for both widgets
 ├── widget/
-│   ├── WeatherWidget.kt          # GlanceAppWidget wrapped in GlanceTheme; tap-to-launch; dynamic color
-│   └── WeatherWidgetReceiver.kt  # GlanceAppWidgetReceiver
+│   ├── WeatherWidget.kt           # GlanceAppWidget; temp display; dynamic color; tap-to-launch
+│   ├── WeatherWidgetReceiver.kt   # GlanceAppWidgetReceiver stub
+│   ├── AlarmWidget.kt             # GlanceAppWidget; next alarm display; icon + text layout
+│   └── AlarmWidgetReceiver.kt     # GlanceAppWidgetReceiver; handles alarm/time/boot broadcasts; goAsync()
 └── worker/
-    ├── WeatherFetchWorker.kt     # CoroutineWorker; Result.failure() if no location
-    └── WorkScheduler.kt          # schedule() / cancel() helpers
+    ├── WeatherFetchWorker.kt      # CoroutineWorker; calls WeatherWidget().updateAll() on success
+    └── WorkScheduler.kt           # enqueueUniquePeriodicWork UPDATE policy; CONNECTED constraint
 ```
+
+**DataStore keys (store name: `weather_settings`):** `USE_DEVICE_LOCATION`, `LOCATION_LAT`, `LOCATION_LON`, `LOCATION_DISPLAY_NAME`, `LOCATION_QUERY`, `TEMP_UNIT` (default `"F"`), `UPDATE_INTERVAL_MINUTES` (default `60`), `LAST_TEMP_CELSIUS`, `LAST_UPDATED_EPOCH`, `WIDGET_TEXT_COLOR`, `WIDGET_TAP_PACKAGE`, `WIDGET_DYNAMIC_COLOR`, `FONT_SIZE` (default `48`), `ALARM_WIDGET_TAP_PACKAGE`, `ALARM_TEXT`.
 
 ## Testing Conventions
 
-- All tests use `@RunWith(RobolectricTestRunner::class)` + `ApplicationProvider.getApplicationContext()`
-- Each test class touching DataStore needs `@Before fun clearDataStore()` calling `context.dataStore.edit { it.clear() }` to prevent cross-test pollution
-- Mock `OpenMeteoService` with MockK — pass separate mocks as `weatherService` and `geocodingService`
-- ViewModel tests: inject `StandardTestDispatcher(testScheduler)` and call `advanceUntilIdle()` instead of `Thread.sleep`
-- `SettingsViewModel.uiState` uses `stateIn(WhileSubscribed(5000))` — activate upstream with `backgroundScope.launch { vm.uiState.collect {} }` before asserting
-- Assert ViewModel state via `vm.uiState.filter { ... }.first()`, not by reading DataStore directly
+- `@RunWith(RobolectricTestRunner::class)` + `ApplicationProvider.getApplicationContext()` on all test classes.
+- `@Before` must call `context.dataStore.edit { it.clear() }` to prevent cross-test DataStore pollution.
+- Mock `OpenMeteoService` with MockK; pass separate mocks as `weatherService` and `geocodingService`.
+- ViewModel tests: inject `StandardTestDispatcher(testScheduler)` and call `advanceUntilIdle()`.
+- `SettingsViewModel.uiState` uses `stateIn(WhileSubscribed(5000))` — activate upstream before asserting: `backgroundScope.launch { vm.uiState.collect {} }`.
+- Assert ViewModel state via `vm.uiState.filter { ... }.first()`, not by reading DataStore directly.
 
 ## Dependency Versions
 
-All versions are in `gradle/libs.versions.toml`. Aliases follow the pattern `libs.compose.bom`, `libs.glance.appwidget`, `libs.work.runtime.ktx`, etc.
+| Library | Version |
+|-|-|
+| Kotlin | 2.3.20 |
+| Compose BOM | 2026.03.00 |
+| Glance | 1.2.0-rc01 |
+| WorkManager | 2.11.1 |
+| DataStore | 1.2.1 |
+| Retrofit | 3.0.0 |
+| Min SDK / Target SDK | 26 / 36 |
+
+All version aliases live in `gradle/libs.versions.toml`.
