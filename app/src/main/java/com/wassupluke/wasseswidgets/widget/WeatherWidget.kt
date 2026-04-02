@@ -5,7 +5,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.glance.*
@@ -44,15 +43,8 @@ class WeatherWidget : GlanceAppWidget() {
                 val textColorProvider: ColorProvider = if (dynamicColor) {
                     GlanceTheme.colors.primary
                 } else {
-                    val resolved = parseColorSafe(colorString)?.let { argb ->
-                        Color(
-                            red = android.graphics.Color.red(argb) / 255f,
-                            green = android.graphics.Color.green(argb) / 255f,
-                            blue = android.graphics.Color.blue(argb) / 255f,
-                            alpha = android.graphics.Color.alpha(argb) / 255f
-                        )
-                    } ?: Color.White
-                    ColorProvider(resolved)
+                    val argb = parseColorSafe(colorString) ?: android.graphics.Color.WHITE
+                    ColorProvider(argb)
                 }
 
                 val tapPackage = prefs[WeatherDataStore.WIDGET_TAP_PACKAGE]
