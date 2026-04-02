@@ -11,10 +11,8 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.glance.*
 import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
-import androidx.glance.layout.Alignment
 import androidx.glance.GlanceTheme
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
