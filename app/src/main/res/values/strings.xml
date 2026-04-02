@@ -7,6 +7,7 @@
     <string name="widget_temperature_description">Shows the current temperature on your home screen</string>
     <string name="widget_alarm_label">Next Alarm</string>
     <string name="widget_alarm_description">Shows your next scheduled alarm on your home screen</string>
+    <string name="widget_alarm_none">No alarm</string>
 
     <!-- Settings: Location -->
     <string name="settings_location_title">Location</string>

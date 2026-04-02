@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.updateAll
+import com.wassupluke.wasseswidgets.R
 import com.wassupluke.wasseswidgets.data.WeatherDataStore
 import com.wassupluke.wasseswidgets.data.dataStore
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +40,7 @@ class AlarmWidgetReceiver : GlanceAppWidgetReceiver() {
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                 val nextAlarm = alarmManager.nextAlarmClock
                 val alarmText = if (nextAlarm == null) {
-                    "No alarm"
+                    context.getString(R.string.widget_alarm_none)
                 } else {
                     DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(nextAlarm.triggerTime))
                 }

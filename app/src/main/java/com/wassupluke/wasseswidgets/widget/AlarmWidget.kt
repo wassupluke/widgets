@@ -36,7 +36,7 @@ class AlarmWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 val prefs by context.dataStore.data.collectAsState(initial = emptyPreferences())
-                val alarmText = prefs[WeatherDataStore.ALARM_TEXT] ?: "No alarm"
+                val alarmText = prefs[WeatherDataStore.ALARM_TEXT] ?: context.getString(R.string.widget_alarm_none)
                 val colorString = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white"
                 val dynamicColor = prefs.resolveDynamicColor()
                 val fontSize = prefs[WeatherDataStore.FONT_SIZE] ?: WeatherDataStore.DEFAULT_FONT_SIZE
@@ -81,7 +81,7 @@ private fun AlarmWidgetContent(
             Image(
                 provider = ImageProvider(R.drawable.ic_alarm),
                 contentDescription = null,
-                modifier = GlanceModifier.size(fontSize.dp),
+                modifier = GlanceModifier.size(fontSize.coerceAtMost(32).dp),
                 colorFilter = ColorFilter.tint(textColorProvider)
             )
             Spacer(GlanceModifier.width(4.dp))
