@@ -14,7 +14,7 @@ import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
-import androidx.glance.layout.*
+import androidx.glance.layout.Alignment
 import androidx.glance.GlanceTheme
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
@@ -90,12 +90,7 @@ private fun WeatherWidgetContent(
     tapAction: Action,
     fontSize: Int
 ) {
-    Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .clickable(tapAction),
-        contentAlignment = Alignment.Center
-    ) {
+    WidgetRoot(tapAction = tapAction) {
         Text(
             text = displayTemp,
             style = TextStyle(
