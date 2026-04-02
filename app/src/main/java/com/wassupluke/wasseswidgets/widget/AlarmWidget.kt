@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.compose.ui.unit.dp
 import androidx.glance.*
 import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
@@ -18,6 +19,7 @@ import androidx.glance.layout.*
 import androidx.glance.GlanceTheme
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
+import com.wassupluke.wasseswidgets.R
 import com.wassupluke.wasseswidgets.data.WeatherDataStore
 import com.wassupluke.wasseswidgets.data.dataStore
 import com.wassupluke.wasseswidgets.data.parseColorSafe
@@ -83,13 +85,22 @@ private fun AlarmWidgetContent(
             .clickable(tapAction),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = alarmText,
-            style = TextStyle(
-                fontSize = fontSize.sp,
-                fontWeight = FontWeight.Normal,
-                color = textColorProvider
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                provider = ImageProvider(R.drawable.ic_alarm),
+                contentDescription = null,
+                modifier = GlanceModifier.size(fontSize.dp),
+                colorFilter = ColorFilter.tint(textColorProvider)
             )
-        )
+            Spacer(GlanceModifier.width(4.dp))
+            Text(
+                text = alarmText,
+                style = TextStyle(
+                    fontSize = fontSize.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = textColorProvider
+                )
+            )
+        }
     }
 }

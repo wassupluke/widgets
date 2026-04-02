@@ -32,7 +32,7 @@ class WeatherWidget : GlanceAppWidget() {
             GlanceTheme {
                 val prefs by context.dataStore.data.collectAsState(initial = emptyPreferences())
                 val tempCelsius = prefs[WeatherDataStore.LAST_TEMP_CELSIUS]
-                val unit = prefs[WeatherDataStore.TEMP_UNIT] ?: "C"
+                val unit = prefs[WeatherDataStore.TEMP_UNIT] ?: WeatherDataStore.DEFAULT_TEMP_UNIT
                 val colorString = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white"
                 val dynamicColor = prefs.resolveDynamicColor()
 
