@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Wasses Widgets</string>
+    <string name="app_name">Widgets</string>
 
     <!-- Widget picker labels and descriptions -->
     <string name="widget_temperature_label">Temperature</string>
@@ -41,7 +41,7 @@
     <string name="settings_alarm_tap_title">Alarm widget tap action</string>
 
     <!-- Settings: Shared tap-action UI -->
-    <string name="settings_tap_none_label">None (opens Wasses Widgets)</string>
+    <string name="settings_tap_none_label">None (opens Widgets)</string>
     <string name="settings_tap_app_missing_label">Selected app not found</string>
 
     <!-- Actions -->
