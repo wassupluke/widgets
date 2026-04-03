@@ -16,7 +16,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
+import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.Spacer
@@ -79,9 +79,10 @@ private fun AlarmWidgetContent(
     tapAction: Action,
     fontSize: Int
 ) {
-    Box(
+    Column(
         modifier = GlanceModifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
             modifier = GlanceModifier.clickable(tapAction),
