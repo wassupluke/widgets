@@ -111,7 +111,14 @@ class SettingsViewModel(
 
     fun setUseDeviceLocation(use: Boolean) {
         viewModelScope.launch(dispatcher) {
-            context.dataStore.edit { it[WeatherDataStore.USE_DEVICE_LOCATION] = use }
+            context.dataStore.edit { prefs ->
+                prefs[WeatherDataStore.USE_DEVICE_LOCATION] = use
+                if (!use) {
+                    prefs.remove(WeatherDataStore.LOCATION_LAT)
+                    prefs.remove(WeatherDataStore.LOCATION_LON)
+                    prefs.remove(WeatherDataStore.LAST_TEMP_CELSIUS)
+                }
+            }
             if (!use) {
                 WorkScheduler.cancel(context)
             }
