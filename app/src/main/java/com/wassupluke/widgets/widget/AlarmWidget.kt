@@ -3,12 +3,9 @@ package com.wassupluke.widgets.widget
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
-import androidx.datastore.preferences.core.emptyPreferences
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.*
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
@@ -29,19 +26,21 @@ import com.wassupluke.widgets.data.WeatherDataStore
 import com.wassupluke.widgets.data.dataStore
 import com.wassupluke.widgets.data.parseColorSafe
 import com.wassupluke.widgets.data.resolveDynamicColor
+import kotlinx.coroutines.flow.first
 
 @SuppressLint("RestrictedApi")
 class AlarmWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val prefs = context.dataStore.data.first()
+        val alarmText = prefs[WeatherDataStore.ALARM_TEXT] ?: context.getString(R.string.widget_alarm_none)
+        val colorString = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white"
+        val dynamicColor = prefs.resolveDynamicColor()
+        val fontSize = prefs[WeatherDataStore.FONT_SIZE] ?: WeatherDataStore.DEFAULT_FONT_SIZE
+        val tapPackage = prefs[WeatherDataStore.ALARM_WIDGET_TAP_PACKAGE]
+
         provideContent {
             GlanceTheme {
-                val prefs by context.dataStore.data.collectAsState(initial = emptyPreferences())
-                val alarmText = prefs[WeatherDataStore.ALARM_TEXT] ?: context.getString(R.string.widget_alarm_none)
-                val colorString = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white"
-                val dynamicColor = prefs.resolveDynamicColor()
-                val fontSize = prefs[WeatherDataStore.FONT_SIZE] ?: WeatherDataStore.DEFAULT_FONT_SIZE
-
                 val textColorProvider: ColorProvider = if (dynamicColor) {
                     GlanceTheme.colors.primary
                 } else {
@@ -49,12 +48,10 @@ class AlarmWidget : GlanceAppWidget() {
                     ColorProvider(Color(argb))
                 }
 
-                val tapAction = resolveTapAction(context, prefs[WeatherDataStore.ALARM_WIDGET_TAP_PACKAGE])
-
                 AlarmWidgetContent(
                     alarmText = alarmText,
                     textColorProvider = textColorProvider,
-                    tapAction = tapAction,
+                    tapAction = resolveTapAction(context, tapPackage),
                     fontSize = fontSize
                 )
             }

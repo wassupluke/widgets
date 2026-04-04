@@ -3,11 +3,8 @@ package com.wassupluke.widgets.widget
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
-import androidx.datastore.preferences.core.emptyPreferences
 import androidx.glance.*
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
@@ -24,26 +21,30 @@ import com.wassupluke.widgets.data.dataStore
 import com.wassupluke.widgets.data.parseColorSafe
 import com.wassupluke.widgets.data.resolveDynamicColor
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.first
 
 @SuppressLint("RestrictedApi")
 class WeatherWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val prefs = context.dataStore.data.first()
+        val tempCelsius = prefs[WeatherDataStore.LAST_TEMP_CELSIUS]
+        val unit = prefs[WeatherDataStore.TEMP_UNIT] ?: WeatherDataStore.DEFAULT_TEMP_UNIT
+        val colorString = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white"
+        val dynamicColor = prefs.resolveDynamicColor()
+
+        val displayTemp = if (tempCelsius == null) {
+            "--°"
+        } else {
+            val value = if (unit == "F") celsiusToFahrenheit(tempCelsius) else tempCelsius.roundToInt()
+            "$value°"
+        }
+
+        val tapPackage = prefs[WeatherDataStore.WIDGET_TAP_PACKAGE]
+        val fontSize = prefs[WeatherDataStore.FONT_SIZE] ?: WeatherDataStore.DEFAULT_FONT_SIZE
+
         provideContent {
             GlanceTheme {
-                val prefs by context.dataStore.data.collectAsState(initial = emptyPreferences())
-                val tempCelsius = prefs[WeatherDataStore.LAST_TEMP_CELSIUS]
-                val unit = prefs[WeatherDataStore.TEMP_UNIT] ?: WeatherDataStore.DEFAULT_TEMP_UNIT
-                val colorString = prefs[WeatherDataStore.WIDGET_TEXT_COLOR] ?: "white"
-                val dynamicColor = prefs.resolveDynamicColor()
-
-                val displayTemp = if (tempCelsius == null) {
-                    "--°"
-                } else {
-                    val value = if (unit == "F") celsiusToFahrenheit(tempCelsius) else tempCelsius.roundToInt()
-                    "$value°"
-                }
-
                 val textColorProvider: ColorProvider = if (dynamicColor) {
                     GlanceTheme.colors.primary
                 } else {
@@ -51,14 +52,10 @@ class WeatherWidget : GlanceAppWidget() {
                     ColorProvider(Color(argb))
                 }
 
-                val tapAction = resolveTapAction(context, prefs[WeatherDataStore.WIDGET_TAP_PACKAGE])
-
-                val fontSize = prefs[WeatherDataStore.FONT_SIZE] ?: WeatherDataStore.DEFAULT_FONT_SIZE
-
                 WeatherWidgetContent(
                     displayTemp = displayTemp,
                     textColorProvider = textColorProvider,
-                    tapAction = tapAction,
+                    tapAction = resolveTapAction(context, tapPackage),
                     fontSize = fontSize
                 )
             }
