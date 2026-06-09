@@ -46,7 +46,7 @@ jobs:
       - name: Rename APK
         id: rename_apk
         run: |
-          RENAMED="simple-weather-${{ github.ref_name }}.apk"
+          RENAMED="wassupluke-widgets-${{ github.ref_name }}.apk"
           mv "${{ steps.sign_app.outputs.signedReleaseFile }}" "$RENAMED"
           echo "apk_path=$RENAMED" >> $GITHUB_OUTPUT
 
