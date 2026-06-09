@@ -9,7 +9,8 @@ val gitVersionCode = providers.exec {
 }.standardOutput.asText.map { it.trim().toIntOrNull() ?: 1 }
 
 val gitVersionName = providers.exec {
-    commandLine("git", "describe", "--tags", "--always")
+    // Match only version tags so the force-pushed `dev` tag can't shadow them.
+    commandLine("git", "describe", "--tags", "--match", "v*", "--always")
 }.standardOutput.asText.map { it.trim().removePrefix("v").ifEmpty { "0.0.0" } }
 
 android {
