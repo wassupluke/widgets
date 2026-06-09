@@ -1,84 +1,44 @@
 # CLAUDE.md
 
-This file orients a new Claude Code session for this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+µWidgets — a standalone Android app (Kotlin) providing minimal home-screen widgets: a **weather widget** (current temperature + optional emoji/condition line) and an **upcoming-alarm widget** (alarm icon + next-alarm time). Styled to match µLauncher's clock — transparent background, white text with a shadow, Hack font — but it depends on nothing from µLauncher; any launcher can host the widgets. Package `com.wassupluke.widgets`.
 
-This is a simple app to provide at-a-glance widgets to show the current temperature and the next upcoming alarm. It is written in Kotlin, Jetpack Compose, and Glance. The `MainActivity` for the app is a single settings page which controls how the widgets look and function. The `MainActivity` follows the device preference for light/dark theme. The user can set the widget font size to anywhere from 12-64sp. Open-Meteo provides weather and geocoding (no API key required).
+## Build & Run
 
+JDK 17+ (source/target 17; JDK 21 runs the build fine). Requires `local.properties` with `sdk.dir=<android-sdk-path>` (gitignored — create it locally; the build fails without it).
 
-## Design decisions
+- Debug build / install: `./gradlew :app:assembleDebug` / `./gradlew :app:installDebug`
+- All unit tests: `./gradlew :app:testDebugUnitTest`
+- One test class: `./gradlew :app:testDebugUnitTest --tests "com.wassupluke.widgets.WeatherCodeTest"`
+- minSdk 26, compile/target 36. There is no `app:installDebug` device check — connect a device/emulator first.
 
-- Nothing is to be built unless a unit test has first been written to validate core functionality against.
-- Only check for temperature updates if the user has the temperature widget placed and active on their homescreen.
-- Temperature is always stored as Celsius (`LAST_TEMP_CELSIUS`); F/C conversion happens at display time only.
-- Each widget updates independent of the other. e.g., the upcoming alarm widget only updates itself when triggered, and the temp widget only updates itself on the user-defined schedule.
-- Each widget has it's own separate touch target.
-- All widgets share the same font size and color/theme defined by the user in the app's settings activity.
-  - The status bar font color must be of contrasting color to the `MainActivity` background color for visibility.
-- The upcoming alarm widget must update itself any time device alarms change.
-- The `MainActivity` screen is comprised of three sections:
-  1. "All widget settings" which affect all widgets. Following this section are sections for settings on individual widgets.
-    a. "Dynamic color" as a toggle. Defaults to off. More defaults are discussed further down this list. When on, uses the Compose Material 3 Primary color. When off, reveals a color picker and associated single-line text box. The text box is for displaying the ARGB hex of the currently selected color, and serves as an input field for the user to manually input an RGB or ARGB hex value. If the user enters a valid hex value in the input field, the color picker updates to also reflect the color input.
-    b. "Font size" as a slider that shows the currently selected value to the right of the slider
-  2. "Temperature widget settings"
-    a. "Use device location" as a toggle, where the off state reveals a single-line text field that requires a zip code or City, State input
-    b. "Temperature unit" as an either-or button toggle like [ °C | °F ]
-    c. "Update frequency" with interval options as a dropdown list of 15 min, 30 min, 1 hr, 3 hr, or 6 hr.
-    d. "Widget tap action" where the user selects one of any of the installed apps on their device (excluding deep system apps) as the touch target.
-- All settings should be set automatically when changed by the user, without requiring any "Save" or "Set" action from the user.
-- Default widget text color is white. Default widget font size is 30sp. Default widget touch target is to launch `MainActivity`.
-- Default values are also fallback values.
-- All strings are abstracted to xml string resource files.
+## Architecture
 
-### Temperature widget layout
+The core model is **fetch → cache → render**, split into a pure, unit-tested data layer and a thin Android glue layer.
 
-This widget is simple, showing simply the numeric value of the current temperature in the unit the user selected in `MainActivity`, followed by a simple degree symbol.
+### Data layer (`weather/data/`) — pure, JVM-unit-tested
+- `WeatherRepository.refresh()` orchestrates: get location → fetch → parse, returning a sealed `RefreshResult` (`Success`/`NoPermission`/`NoLocation`/`NetworkError`). It depends on two interfaces so it can be tested with fakes:
+  - `LocationProvider` → `LocationResult` (`Available`/`PermissionMissing`/`Unavailable`). Production impl `FrameworkLocationProvider` uses the **framework `LocationManager` only — no Google Play Services / FusedLocation** (keeps the app FOSS-friendly). It prefers a last-known fix, else a single timed-out current fix (API-version-branched: `getCurrentLocation` on R+, explicit `LocationListener` on 26–29).
+  - `HttpClient` → production impl `UrlHttpClient` (`HttpURLConnection`).
+- `OpenMeteo` builds the Open-Meteo URL (no API key) and parses the response (kotlinx.serialization). `WeatherData` is the model; `WeatherCache` persists the last result in SharedPreferences.
+- `WeatherCode.describe(code)` maps WMO codes → emoji+label.
+- **Temperature is a display concern, not a fetch concern.** Weather is always fetched and cached in **Celsius** (`WeatherData.temperature`); the unit is applied only at render time by `formatTemperature(celsius, unit)`. So changing the unit re-renders instantly with no refetch and no stale-unit window. `TemperatureUnit.forLocale(locale)` is the best-effort "Automatic" resolver (reads Android 14+ `mu`/`ms` Unicode locale extensions, then a country fallback).
 
-### Upcoming alarm widget layout
+**IMPORTANT — the data layer must stay free of Android-only APIs** (e.g. `android.net.Uri`, `android.icu.*`). Its unit tests run on the plain JVM (no Robolectric), so such calls would compile but throw at test time. Hand-rolled URL building and the extension/country-based locale→unit resolution exist deliberately for this reason — the Android-side `Settings.resolvedUnit(context)` is where context/config-locale access lives.
 
-The upcoming alarm widget has three elements in a row:
-1. Google Alarm icon
-  - ```kotlin
-    dependencies {
-        implementation("androidx.compose.material:material-icons-extended:$compose_version")
-    }
-  - ```kotlin
-    import androidx.compose.material.Icon
-    import androidx.compose.material.icons.Icons
-    import androidx.compose.material.icons.filled.Alarm
-    import androidx.compose.ui.graphics.Color
+### Android glue (`weather/`)
+- `WeatherWidgetProvider : AppWidgetProvider` — `renderWidgets(context)` is the central, only place that builds `RemoteViews` (loads cache + `Settings`, computes the values once, then loops over widget ids). `onUpdate`/`onEnabled`/`onDisabled` wire scheduling; tap-to-refresh and refresh-broadcast go through `RefreshWeatherWorker`.
+- `RefreshWeatherWorker : CoroutineWorker` — drives all refreshes (WorkManager, not `updatePeriodMillis` which is `0`): a periodic 30-min job (`CONNECTED` constraint, scheduled in `onEnabled`) plus expedited one-shots for `onUpdate`/tap/permission-grant. After a fetch it saves to cache and calls `renderWidgets`.
+- `MainActivity` — the app's only screen: requests `ACCESS_COARSE_LOCATION` (widgets can't request runtime permissions) and hosts the settings UI (show-condition toggle, temperature-unit selector, wallpaper-color toggle, font-size `SeekBar`, text-alignment `MaterialButtonToggleGroup`, tap-action picker — refresh or launch any installed app, chosen via an `AlertDialog` over `queryIntentActivities(MAIN/LAUNCHER)`). The settings are inside a `ScrollView` so they don't clip as they grow. Changing any setting calls `WeatherWidgetProvider.renderWidgets` directly (no refetch). It applies window insets as padding so content clears the status/navigation bars (edge-to-edge is on by default at targetSdk 36).
+- `Settings` — app-wide preferences (SharedPreferences-backed): `showCondition`, `unitMode` (`UnitMode.AUTO`/`CELSIUS`/`FAHRENHEIT`), `fontSize` (sp; condition line scales by `CONDITION_SIZE_RATIO`), and `dynamicColor`. `resolvedUnit(context)` maps the mode to a `TemperatureUnit`, using the resource-config locale for AUTO.
 
-    @Composable
-    fun AlarmIcon() {
-        Icon(
-            imageVector = Icons.Filled.Alarm,
-            contentDescription = "Alarm Clock",
-            tint = Color.Black
-        )
-    }
-    ```
-2. A 3-letter day of the week short code text. First letter capitalized (e.g., Tue)
-3. The time of the upcoming alarm. Formatted per device locale and time format settings for 12-hr vs 24-hr. If 12-hr, must add the appropriate "AM"/"PM" suffix separated from the time by a single space.
+## Conventions & gotchas
 
-## Build & Test Commands
-
-Before building widgets, review all Glance documentation instructions in docs/glance-documentation-links.md.
-
-TDD is mandatory.
-
-Run all commands from the repo root.
-
-| Command | Purpose |
-|-|-|
-| `./gradlew assembleDebug` | Full debug build |
-| `./gradlew :app:compileDebugKotlin` | Compile-check only (faster) |
-| `./gradlew :app:testDebugUnitTest` | All unit tests |
-| `./gradlew :app:testDebugUnitTest --tests "com.wassupluke.widgets.data.WeatherRepositoryTest"` | Single test class |
-
-`./gradlew :app:test` is not supported. All unit tests use Robolectric — no emulator needed.
-
-## Testing Conventions
-
-- `@RunWith(RobolectricTestRunner::class)` + `ApplicationProvider.getApplicationContext()` on all test classes.
-- Mock `OpenMeteoService` with MockK; pass separate mocks as `weatherService` and `geocodingService`.
+- **Widget layout uses `RemoteViews`** (`res/layout/widget_weather.xml`): only RemoteViews-supported views — `LinearLayout`/`TextView`, **no `ConstraintLayout`**. The Hack font is referenced statically via `android:fontFamily="@font/hack"` (works in RemoteViews); text color and size are set per-render in `renderWidgets` (`setTextColor`/`setTextViewTextSize`), and a dark shadow (baked in the layout, can't be set via RemoteViews) keeps text legible on any wallpaper. Dynamic color uses the Material You **accent** palette (`@android:color/system_accent1_*`, API 31+) — wallpaper-derived but contrast-picked (dark tone for light wallpapers via `WallpaperColors` `HINT_SUPPORTS_DARK_TEXT`, light tone otherwise); pre-31 falls back to black/white by wallpaper luminance. Do **not** use `getWallpaperColors().primaryColor` for text — it's the raw dominant color and blends into the wallpaper. Recomputed each render, so wallpaper changes appear on the next refresh.
+- **Text alignment** is applied by setting the root `LinearLayout`'s gravity from `renderWidgets` via `views.setInt(R.id.widget_root, "setGravity", gravity)` (`LinearLayout.setGravity` is remotable) — the text views stay `wrap_content`, so the gravity positions them left/center/right.
+- **Refresh broadcast is an *explicit* intent** to the provider component (`WeatherWidgetProvider.ACTION_REFRESH`), so it is delivered without an `<action>` entry in the manifest intent-filter — do not re-add one; the constant is the single source of truth.
+- **The tap `PendingIntent` is set on the text views only** (`R.id.temperature`/`R.id.condition`), not the root, so the transparent cell area isn't a tap target. It's either the refresh broadcast or a launch-activity intent for `Settings.launchPackage` (falls back to refresh if the app is uninstalled). Listing/launching installed apps requires the `<queries>` MAIN/LAUNCHER element in the manifest (Android 11+ package visibility) — no `QUERY_ALL_PACKAGES`.
+- New persisted state goes through a small SharedPreferences wrapper (`WeatherCache`, `Settings`), not raw key access scattered around.
+- New display strings go in `res/values/strings.xml`.
+- **App launcher icon** is an adaptive icon: foreground `@mipmap/ic_launcher_fg` (the design scaled to ~76% so it clears circle masks) over `@drawable/ic_launcher_background` (the `#F4E9FC`→`#C8B0FB` gradient). The source master is `icon.png` at the repo root (a squircle on black). To regenerate: de-black it (`magick icon.png -fuzz 8% -transparent black`), composite the cutout centered+scaled over the gradient, and emit `ic_launcher_fg` (108–432 px) + legacy `ic_launcher`/`ic_launcher_round` (48–192 px). Widget *picker* icons are separate: `ic_launcher_foreground` (sun) for Weather, `ic_alarm` for Alarm.

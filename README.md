@@ -3,7 +3,7 @@ A simple weather widget and a simple upcoming alarm widget.
 
 ## Project Overview
 
-A minimal Android app (Kotlin + Jetpack Compose + Material3) whose primary value is home screen widgets displaying the current temperature and upcoming alarms. Open-Meteo is used for weather and geocoding (no API key required).
+A minimal Android app (Kotlin) whose primary value is home screen widgets displaying the current temperature and the next upcoming alarm. The widgets are built with RemoteViews/AppWidget; Open-Meteo provides weather (no API key required). Location uses the framework LocationManager (no Google Play Services).
 
 ## Releases
 
