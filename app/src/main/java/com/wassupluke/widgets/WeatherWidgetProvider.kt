@@ -22,12 +22,16 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        // Render from cache + ensure the heartbeat; do NOT fetch here — the host (e.g. the
+        // launcher's AppWidgetHost) can fire onUpdate repeatedly, and a fetch per update would
+        // storm and, with some hosts, loop.
         renderWidgets(context)
-        RefreshWeatherWorker.enqueueOnce(context)
         scheduleHeartbeat(context)
     }
 
     override fun onEnabled(context: Context) {
+        // First widget placed: seed an initial fetch and start the refresh heartbeat.
+        RefreshWeatherWorker.enqueueOnce(context)
         scheduleHeartbeat(context)
     }
 
@@ -57,9 +61,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         /** Rebuilds RemoteViews for every widget instance from cached data + settings. */
         fun renderWidgets(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(
-                ComponentName(context, WeatherWidgetProvider::class.java)
-            )
+            val ids = widgetIds(context)
             if (ids.isEmpty()) return
 
             val cached = WeatherCache.load(context)
@@ -74,7 +76,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 if (Settings.showCondition(context)) View.VISIBLE else View.GONE
             // Tap launches the chosen app, or refreshes if none is set / it's uninstalled.
             val onClick = Settings.launchPackage(context)?.let { launchIntent(context, it) }
-                ?: refreshIntent(context)
+                ?: broadcastIntent(context, ACTION_REFRESH, 0)
             val color = WidgetStyle.textColor(context)
             val temperatureSize = Settings.fontSize(context).toFloat()
             val conditionSize = temperatureSize * Settings.CONDITION_SIZE_RATIO
@@ -97,10 +99,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun hasWidgets(context: Context): Boolean =
+        private fun widgetIds(context: Context): IntArray =
             AppWidgetManager.getInstance(context).getAppWidgetIds(
                 ComponentName(context, WeatherWidgetProvider::class.java)
-            ).isNotEmpty()
+            )
+
+        private fun hasWidgets(context: Context): Boolean = widgetIds(context).isNotEmpty()
 
         /**
          * Arm a single ~30-min wake-up. `setAndAllowWhileIdle` fires through Doze without the
@@ -108,8 +112,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
          * Re-arming reuses the same PendingIntent, so there is only ever one pending alarm.
          */
         private fun scheduleHeartbeat(context: Context) {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            alarmManager.setAndAllowWhileIdle(
+            alarmManager(context).setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 System.currentTimeMillis() + REFRESH_INTERVAL_MS,
                 heartbeatIntent(context)
@@ -117,26 +120,22 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         }
 
         private fun cancelHeartbeat(context: Context) {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            alarmManager.cancel(heartbeatIntent(context))
+            alarmManager(context).cancel(heartbeatIntent(context))
         }
 
-        private fun heartbeatIntent(context: Context): PendingIntent {
-            val intent = Intent(context, WeatherWidgetProvider::class.java).apply {
-                action = ACTION_HEARTBEAT
-            }
-            return PendingIntent.getBroadcast(
-                context, 4, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
+        private fun alarmManager(context: Context): AlarmManager =
+            context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        private fun refreshIntent(context: Context): PendingIntent {
+        private fun heartbeatIntent(context: Context): PendingIntent =
+            broadcastIntent(context, ACTION_HEARTBEAT, 4)
+
+        /** Explicit broadcast PendingIntent targeting this provider (refresh / heartbeat). */
+        private fun broadcastIntent(context: Context, action: String, requestCode: Int): PendingIntent {
             val intent = Intent(context, WeatherWidgetProvider::class.java).apply {
-                action = ACTION_REFRESH
+                this.action = action
             }
             return PendingIntent.getBroadcast(
-                context, 0, intent,
+                context, requestCode, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }

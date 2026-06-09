@@ -16,6 +16,7 @@ object Settings {
     private const val KEY_ALARM_LAUNCH_PACKAGE = "alarm_launch_package"
     private const val KEY_ALARM_LAUNCH_LABEL = "alarm_launch_label"
     private const val KEY_TEXT_ALIGN = "text_align"
+    private const val KEY_BG_LOCATION_ASKED = "bg_location_asked"
 
     /** Horizontal alignment of the widget text. */
     enum class TextAlign { START, CENTER, END }
@@ -109,6 +110,14 @@ object Settings {
 
     private fun clearLaunchPref(context: Context, packageKey: String, labelKey: String) {
         prefs(context).edit().remove(packageKey).remove(labelKey).apply()
+    }
+
+    /** Whether we've already auto-prompted for background location (asked once, then never nag). */
+    fun backgroundLocationAsked(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_BG_LOCATION_ASKED, false)
+
+    fun setBackgroundLocationAsked(context: Context) {
+        prefs(context).edit().putBoolean(KEY_BG_LOCATION_ASKED, true).apply()
     }
 
     fun textAlign(context: Context): TextAlign =

@@ -3,6 +3,7 @@ package com.wassupluke.widgets
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.RadioGroup
@@ -27,10 +28,15 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             updateStatus(granted)
             if (granted) {
+                // "Allow all the time" must be requested separately, after foreground is granted.
+                ensureBackgroundLocation()
                 // The refresh heartbeat is armed by the widget's lifecycle; just fetch now.
                 RefreshWeatherWorker.enqueueOnce(this)
             }
         }
+
+    private val requestBackgroundLocation =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* OS handles it */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -145,7 +151,25 @@ class MainActivity : AppCompatActivity() {
 
         if (!hasPermission()) {
             requestPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+        } else {
+            ensureBackgroundLocation()
         }
+    }
+
+    /**
+     * Prompt once for "Allow all the time" so background refreshes can get a fresh fix. Only on
+     * API 29+ (pre-29 it's covered by the foreground grant); only after foreground is granted;
+     * asked at most once, then left to system Settings so we never nag.
+     */
+    private fun ensureBackgroundLocation() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        if (!hasPermission()) return
+        val granted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted || Settings.backgroundLocationAsked(this)) return
+        Settings.setBackgroundLocationAsked(this)
+        requestBackgroundLocation.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
     }
 
     /** Re-render both widgets — used by the appearance settings they share. */
@@ -209,7 +233,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateStatus(hasPermission())
+        val granted = hasPermission()
+        updateStatus(granted)
+        // Foreground fetch: refreshes now and seeds the last-known location that background
+        // widget refreshes reuse (they can't acquire a live fix without background-location).
+        if (granted) RefreshWeatherWorker.enqueueOnce(this)
     }
 
     private fun hasPermission(): Boolean =

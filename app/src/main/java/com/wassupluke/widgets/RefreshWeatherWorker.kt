@@ -3,6 +3,7 @@ package com.wassupluke.widgets
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
@@ -43,6 +44,8 @@ class RefreshWeatherWorker(
     }
 
     companion object {
+        private const val UNIQUE_WORK = "weather_refresh"
+
         private val networkConstraint =
             Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
@@ -51,7 +54,11 @@ class RefreshWeatherWorker(
                 .setConstraints(networkConstraint)
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
-            WorkManager.getInstance(context).enqueue(request)
+            // Unique + REPLACE coalesces a burst of triggers (permission grant, onResume,
+            // heartbeat, taps) into a single refresh so the widget doesn't re-render repeatedly.
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                UNIQUE_WORK, ExistingWorkPolicy.REPLACE, request
+            )
         }
     }
 }
