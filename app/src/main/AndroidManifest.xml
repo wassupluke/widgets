@@ -2,10 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- See/launch the user's installed launcher apps for the tap-to-launch setting. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -15,13 +16,14 @@
 
     <application
         android:allowBackup="true"
-        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SimpleWeather">
+        android:theme="@style/Theme.WeatherWidget">
 
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -30,9 +32,10 @@
         </activity>
 
         <receiver
-            android:name=".widget.WeatherWidgetReceiver"
-            android:exported="true"
-            android:label="@string/widget_temperature_label">
+            android:name=".WeatherWidgetProvider"
+            android:exported="false"
+            android:icon="@drawable/ic_launcher_foreground"
+            android:label="@string/widget_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -42,20 +45,20 @@
         </receiver>
 
         <receiver
-            android:name=".widget.AlarmWidgetReceiver"
+            android:name=".AlarmWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_alarm_label">
+            android:icon="@drawable/ic_alarm"
+            android:label="@string/alarm_widget_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.app.action.NEXT_ALARM_CLOCK_CHANGED" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/alarm_widget_info" />
         </receiver>
-
     </application>
 </manifest>

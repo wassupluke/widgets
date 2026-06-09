@@ -1,49 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Widgets</string>
-
-    <!-- Widget picker labels and descriptions -->
-    <string name="widget_temperature_label">Temperature</string>
-    <string name="widget_temperature_description">Shows the current temperature on your home screen</string>
-    <string name="widget_alarm_label">Next Alarm</string>
-    <string name="widget_alarm_description">Shows your next scheduled alarm on your home screen</string>
-    <string name="widget_alarm_none">No alarm</string>
-
-    <!-- Settings: Location -->
-    <string name="settings_location_title">Location</string>
-    <string name="settings_location_device_label">Use device location</string>
-    <string name="settings_location_hint">City, zip code, or lat,lon</string>
-
-    <!-- Settings: Temperature -->
-    <string name="settings_temperature_unit_title">Temperature Unit</string>
-
-    <!-- Settings: Update interval -->
-    <string name="settings_update_interval_title">Update Interval</string>
-    <string name="settings_interval_label">Interval</string>
-    <string name="settings_interval_15min">15 min</string>
-    <string name="settings_interval_30min">30 min</string>
-    <string name="settings_interval_1hr">1 hr</string>
-    <string name="settings_interval_3hr">3 hr</string>
-    <string name="settings_interval_6hr">6 hr</string>
-
-    <!-- Settings: Appearance (shared by all widgets) -->
-    <string name="settings_dynamic_color_label">Dynamic color</string>
-    <string name="settings_text_color_title">Widget Text Color</string>
-    <string name="settings_text_color_label">Text color</string>
-    <string name="settings_color_hint">#RRGGBB, #AARRGGBB, or name like red</string>
-    <string name="settings_color_error">Invalid color — enter a hex value or name like \"red\"</string>
-    <string name="settings_font_size_title">Widget font size</string>
-
-    <!-- Settings: Weather widget -->
-    <string name="settings_weather_tap_title">Weather widget tap action</string>
-
-    <!-- Settings: Alarm widget -->
-    <string name="settings_alarm_tap_title">Alarm widget tap action</string>
-
-    <!-- Settings: Shared tap-action UI -->
-    <string name="settings_tap_none_label">None (opens Widgets)</string>
-    <string name="settings_tap_app_missing_label">Selected app not found</string>
-
-    <!-- Actions -->
-    <string name="action_set">Set</string>
+    <string name="app_name">µWidgets</string>
+    <string name="widget_label">Weather</string>
+    <string name="weather_unavailable">Weather unavailable</string>
+    <string name="settings_show_condition">Show condition</string>
+    <string name="settings_unit_title">Temperature unit</string>
+    <string name="settings_unit_auto">Automatic (follow system)</string>
+    <string name="settings_unit_celsius">Celsius (°C)</string>
+    <string name="settings_unit_fahrenheit">Fahrenheit (°F)</string>
+    <string name="settings_dynamic_color">Use wallpaper color</string>
+    <string name="settings_font_size">Font size</string>
+    <string name="font_size_value">%1$d sp</string>
+    <string name="settings_text_align">Text alignment</string>
+    <string name="align_left">Left</string>
+    <string name="align_center">Center</string>
+    <string name="align_right">Right</string>
+    <string name="settings_tap_action">Weather tap action</string>
+    <string name="tap_action_refresh">Refresh weather</string>
+    <string name="tap_action_launch">Launch %1$s</string>
+    <string name="main_hint">Add the Weather widget to your home screen.</string>
+    <string name="permission_granted">Location permission granted.</string>
+    <string name="permission_denied">Location permission denied. Tap to grant.</string>
+    <string name="placeholder_temperature">--°</string>
+    <string name="alarm_widget_label">Alarm</string>
+    <string name="alarm_none">No alarm</string>
+    <string name="alarm_tomorrow">Tomorrow</string>
+    <string name="settings_alarm_tap_action">Alarm tap action</string>
+    <string name="alarm_tap_default">Clock app</string>
 </resources>
