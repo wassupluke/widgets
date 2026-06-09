@@ -3,11 +3,9 @@ package com.wassupluke.widgets
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.wassupluke.widgets.data.FrameworkLocationProvider
@@ -15,7 +13,6 @@ import com.wassupluke.widgets.data.RefreshResult
 import com.wassupluke.widgets.data.UrlHttpClient
 import com.wassupluke.widgets.data.WeatherCache
 import com.wassupluke.widgets.data.WeatherRepository
-import java.util.concurrent.TimeUnit
 
 class RefreshWeatherWorker(
     context: Context,
@@ -46,23 +43,8 @@ class RefreshWeatherWorker(
     }
 
     companion object {
-        private const val PERIODIC = "weather_refresh_periodic"
-
         private val networkConstraint =
             Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-
-        fun schedulePeriodic(context: Context) {
-            val request = PeriodicWorkRequestBuilder<RefreshWeatherWorker>(
-                30, TimeUnit.MINUTES
-            ).setConstraints(networkConstraint).build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request
-            )
-        }
-
-        fun cancelPeriodic(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC)
-        }
 
         fun enqueueOnce(context: Context) {
             val request = OneTimeWorkRequestBuilder<RefreshWeatherWorker>()

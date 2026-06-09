@@ -1,5 +1,6 @@
 package com.wassupluke.widgets
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -12,6 +13,7 @@ import android.widget.RemoteViews
 import com.wassupluke.widgets.data.WeatherCache
 import com.wassupluke.widgets.data.WeatherCode
 import com.wassupluke.widgets.data.formatTemperature
+import java.util.concurrent.TimeUnit
 
 class WeatherWidgetProvider : AppWidgetProvider() {
 
@@ -22,25 +24,35 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     ) {
         renderWidgets(context)
         RefreshWeatherWorker.enqueueOnce(context)
+        scheduleHeartbeat(context)
     }
 
     override fun onEnabled(context: Context) {
-        RefreshWeatherWorker.schedulePeriodic(context)
+        scheduleHeartbeat(context)
     }
 
     override fun onDisabled(context: Context) {
-        RefreshWeatherWorker.cancelPeriodic(context)
+        cancelHeartbeat(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == ACTION_REFRESH) {
-            RefreshWeatherWorker.enqueueOnce(context)
+        when (intent.action) {
+            ACTION_REFRESH -> RefreshWeatherWorker.enqueueOnce(context)
+            // The heartbeat alarm fired: refresh, then re-arm the next one.
+            ACTION_HEARTBEAT -> if (hasWidgets(context)) {
+                RefreshWeatherWorker.enqueueOnce(context)
+                scheduleHeartbeat(context)
+            }
+            // Alarms are cleared by a reboot; re-arm if a widget is still placed.
+            Intent.ACTION_BOOT_COMPLETED -> if (hasWidgets(context)) scheduleHeartbeat(context)
         }
     }
 
     companion object {
         const val ACTION_REFRESH = "com.wassupluke.widgets.ACTION_REFRESH"
+        private const val ACTION_HEARTBEAT = "com.wassupluke.widgets.ACTION_HEARTBEAT"
+        private val REFRESH_INTERVAL_MS = TimeUnit.MINUTES.toMillis(30)
 
         /** Rebuilds RemoteViews for every widget instance from cached data + settings. */
         fun renderWidgets(context: Context) {
@@ -83,6 +95,40 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.condition, onClick)
                 manager.updateAppWidget(id, views)
             }
+        }
+
+        private fun hasWidgets(context: Context): Boolean =
+            AppWidgetManager.getInstance(context).getAppWidgetIds(
+                ComponentName(context, WeatherWidgetProvider::class.java)
+            ).isNotEmpty()
+
+        /**
+         * Arm a single ~30-min wake-up. `setAndAllowWhileIdle` fires through Doze without the
+         * exact-alarm permission; it is one-shot, so each fire re-arms the next (see onReceive).
+         * Re-arming reuses the same PendingIntent, so there is only ever one pending alarm.
+         */
+        private fun scheduleHeartbeat(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + REFRESH_INTERVAL_MS,
+                heartbeatIntent(context)
+            )
+        }
+
+        private fun cancelHeartbeat(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.cancel(heartbeatIntent(context))
+        }
+
+        private fun heartbeatIntent(context: Context): PendingIntent {
+            val intent = Intent(context, WeatherWidgetProvider::class.java).apply {
+                action = ACTION_HEARTBEAT
+            }
+            return PendingIntent.getBroadcast(
+                context, 4, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
         }
 
         private fun refreshIntent(context: Context): PendingIntent {

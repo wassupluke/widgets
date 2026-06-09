@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             updateStatus(granted)
             if (granted) {
-                RefreshWeatherWorker.schedulePeriodic(this)
+                // The refresh heartbeat is armed by the widget's lifecycle; just fetch now.
                 RefreshWeatherWorker.enqueueOnce(this)
             }
         }
