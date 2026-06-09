@@ -30,6 +30,7 @@ object WidgetStyle {
             return ContextCompat.getColor(context, tone)
         }
 
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) return Color.WHITE
         val primary = runCatching {
             WallpaperManager.getInstance(context)
                 .getWallpaperColors(WallpaperManager.FLAG_SYSTEM)?.primaryColor?.toArgb()
