@@ -12,7 +12,6 @@ import android.os.CancellationSignal
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 
 sealed interface LocationResult {
@@ -62,7 +61,7 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
             cont.invokeOnCancellation { signal.cancel() }
             @Suppress("MissingPermission")
             manager.getCurrentLocation(
-                provider, signal, Executors.newSingleThreadExecutor()
+                provider, signal, ContextCompat.getMainExecutor(context)
             ) { location ->
                 if (cont.isActive) {
                     cont.resume(
