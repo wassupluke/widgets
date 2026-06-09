@@ -1,39 +1,23 @@
 # ──────────────────────────────────────────────
 # kotlinx.serialization
-# The plugin generates $$serializer classes; keep them so R8 doesn't strip
-# the companion objects that Retrofit's converter needs at runtime.
+# R8 must not strip the generated $$serializer classes or the Companion
+# accessors used to obtain serializers for @Serializable models.
 # ──────────────────────────────────────────────
 -keepattributes *Annotation*, InnerClasses
--keep,includedescriptorclasses class com.wassupluke.simpleweather.**$$serializer { *; }
--keepclassmembers class com.wassupluke.simpleweather.** {
+
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1> {
     *** Companion;
 }
--keepclasseswithmembers class com.wassupluke.simpleweather.** {
+-keepclasseswithmembers class com.wassupluke.widgets.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
-
-# ──────────────────────────────────────────────
-# Retrofit
-# Keep annotated interface methods; R8 cannot see calls made via dynamic proxy.
-# ──────────────────────────────────────────────
--keepattributes Signature, Exceptions
--keepclasseswithmembers interface * {
-    @retrofit2.http.* <methods>;
-}
+-keep,includedescriptorclasses class com.wassupluke.widgets.**$$serializer { *; }
 
 # ──────────────────────────────────────────────
 # WorkManager
-# Worker subclasses are instantiated by name via reflection.
+# RefreshWeatherWorker is instantiated by name via reflection.
 # ──────────────────────────────────────────────
--keep class com.wassupluke.simpleweather.worker.WeatherFetchWorker {
+-keep class com.wassupluke.widgets.RefreshWeatherWorker {
     public <init>(android.content.Context, androidx.work.WorkerParameters);
 }
-
-# ──────────────────────────────────────────────
-# OkHttp / Okio
-# These classes are optional on some platforms; suppress R8 warnings.
-# ──────────────────────────────────────────────
--dontwarn okhttp3.internal.platform.**
--dontwarn org.conscrypt.**
--dontwarn org.bouncycastle.**
--dontwarn org.openjsse.**
