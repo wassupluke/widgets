@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -41,12 +40,11 @@ android {
         checkReleaseBuilds = true
     }
 
+    // With AGP 9's built-in Kotlin, the Kotlin jvmTarget follows
+    // targetCompatibility, so the old kotlinOptions block is redundant.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
 }
 
