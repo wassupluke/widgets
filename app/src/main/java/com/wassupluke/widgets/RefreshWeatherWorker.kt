@@ -26,7 +26,15 @@ class RefreshWeatherWorker(
             httpClient = UrlHttpClient()
         )
         // Weather is fetched in Celsius; the display unit is applied at render time.
+        val startedAt = System.currentTimeMillis()
+        Debug.log("refresh start (attempt ${runAttemptCount + 1})")
         val result = repository.refresh()
+        val elapsed = System.currentTimeMillis() - startedAt
+        when (result) {
+            is RefreshResult.Success ->
+                Debug.log("refresh ok in ${elapsed}ms: ${result.data.temperature}C code=${result.data.weatherCode}")
+            else -> Debug.warn("refresh failed in ${elapsed}ms: $result")
+        }
         if (result is RefreshResult.Success) {
             WeatherCache.save(applicationContext, result.data)
         }
@@ -50,6 +58,7 @@ class RefreshWeatherWorker(
             Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
         fun enqueueOnce(context: Context) {
+            Debug.log("refresh enqueued")
             val request = OneTimeWorkRequestBuilder<RefreshWeatherWorker>()
                 .setConstraints(networkConstraint)
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)

@@ -23,11 +23,13 @@ class AlarmWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        Debug.log("alarm onUpdate ids=${appWidgetIds.joinToString()}")
         renderAlarmWidgets(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        Debug.log("alarm onReceive action=${intent.action}")
         when (intent.action) {
             AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED,
             Intent.ACTION_TIME_CHANGED,
@@ -42,10 +44,17 @@ class AlarmWidgetProvider : AppWidgetProvider() {
             val ids = manager.getAppWidgetIds(
                 ComponentName(context, AlarmWidgetProvider::class.java)
             )
-            if (ids.isEmpty()) return
+            if (ids.isEmpty()) {
+                Debug.log("alarm render skipped — no widgets placed")
+                return
+            }
 
             val alarm = nextUserAlarm(context)
             val text = alarmText(context, alarm)
+            Debug.log(
+                "alarm render ids=${ids.joinToString()} text='$text' " +
+                    "creator=${alarm?.showIntent?.creatorPackage ?: "none"}"
+            )
             val color = WidgetStyle.textColor(context)
             val gravity = WidgetStyle.gravity(context)
             val fontSize = Settings.fontSize(context).toFloat()
@@ -73,8 +82,12 @@ class AlarmWidgetProvider : AppWidgetProvider() {
         private fun nextUserAlarm(context: Context): AlarmManager.AlarmClockInfo? {
             val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val info = am.nextAlarmClock ?: return null
-            val creator = info.showIntent?.creatorPackage ?: return null
+            val creator = info.showIntent?.creatorPackage ?: run {
+                Debug.log("alarm: next alarm has no showIntent creator — ignored")
+                return null
+            }
             val userFacing = context.packageManager.getLaunchIntentForPackage(creator) != null
+            if (!userFacing) Debug.log("alarm: ignoring non-user alarm from $creator")
             return if (userFacing) info else null
         }
 

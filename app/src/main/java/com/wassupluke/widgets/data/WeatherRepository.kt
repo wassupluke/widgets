@@ -5,9 +5,9 @@ import kotlinx.coroutines.withContext
 
 sealed interface RefreshResult {
     data class Success(val data: WeatherData) : RefreshResult
-    object NoPermission : RefreshResult
-    object NoLocation : RefreshResult
-    object NetworkError : RefreshResult
+    data object NoPermission : RefreshResult
+    data object NoLocation : RefreshResult
+    data object NetworkError : RefreshResult
 }
 
 class WeatherRepository(

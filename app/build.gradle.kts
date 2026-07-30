@@ -24,6 +24,12 @@ android {
         versionName = gitVersionName.get()
     }
 
+    // BuildConfig.DEBUG gates the Debug logcat wrapper; AGP 9 doesn't generate
+    // BuildConfig unless it's asked for.
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
