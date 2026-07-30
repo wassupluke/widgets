@@ -33,7 +33,10 @@ android {
     buildTypes {
         debug {
             // Coexist with an installed release build so on-device testing doesn't disturb it.
+            // The suffixed version name and the debug-only app_name (src/debug/res) keep the two
+            // installs tellable apart on-device — they share an icon otherwise.
             applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
         release {
             isMinifyEnabled = true
@@ -43,6 +46,11 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+
+    buildFeatures {
+        // BuildConfig.DEBUG gates the location-coordinate logging so it is compiled out of release.
+        buildConfig = true
     }
 
     lint {

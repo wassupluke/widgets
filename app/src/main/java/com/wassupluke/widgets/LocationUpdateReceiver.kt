@@ -19,9 +19,19 @@ class LocationUpdateReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val location = extractLocation(intent) ?: return
         LocationCache.save(context, location.latitude, location.longitude)
-        Log.i(TAG, "location update: ${location.latitude},${location.longitude} — refreshing")
+        Log.i(BackgroundLocationUpdates.TAG, "location update delivered — refreshing")
+        // Coordinates are personal data and logcat ends up in bug reports, so they are debug-only.
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                BackgroundLocationUpdates.TAG,
+                "location update: ${location.latitude},${location.longitude}"
+            )
+        }
         // We now have a fresh location — refresh weather (coalesced with any other trigger).
         RefreshWeatherWorker.enqueueOnce(context)
+        // This delivery just refreshed the widget, so push the next heartbeat out a full interval.
+        // Both timers run at ~30 min; without this they drift apart and fetch twice per interval.
+        WeatherWidgetProvider.deferHeartbeat(context)
     }
 
     private fun extractLocation(intent: Intent): Location? {
@@ -32,9 +42,5 @@ class LocationUpdateReceiver : BroadcastReceiver() {
             @Suppress("DEPRECATION")
             extras.getParcelable(LocationManager.KEY_LOCATION_CHANGED)
         }
-    }
-
-    private companion object {
-        const val TAG = "WeatherLocation"
     }
 }
