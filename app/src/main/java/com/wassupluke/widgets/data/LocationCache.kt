@@ -37,12 +37,7 @@ object LocationCache {
         maxAgeMs: Long = MAX_AGE_MS
     ): Pair<Double, Double>? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        // All three keys are written in one batch, so a partial set means the file was corrupted or
-        // hand-edited. Bail rather than let a missing coordinate default to 0.0 — that decodes to a
-        // plausible-looking point in the Gulf of Guinea and would silently show weather for it.
-        if (!prefs.contains(KEY_AT) || !prefs.contains(KEY_LAT) || !prefs.contains(KEY_LON)) {
-            return null
-        }
+        if (!prefs.contains(KEY_AT)) return null
         return decode(
             latBits = prefs.getLong(KEY_LAT, 0),
             lonBits = prefs.getLong(KEY_LON, 0),
