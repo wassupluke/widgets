@@ -10,15 +10,17 @@ import android.os.Build
 import android.os.Bundle
 import android.os.CancellationSignal
 import androidx.core.content.ContextCompat
+import com.wassupluke.widgets.Debug
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 
 sealed interface LocationResult {
     data class Available(val latitude: Double, val longitude: Double) : LocationResult
-    object PermissionMissing : LocationResult
-    object Unavailable : LocationResult
+    data object PermissionMissing : LocationResult
+    data object Unavailable : LocationResult
 }
 
 interface LocationProvider {
@@ -32,20 +34,24 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
+            Debug.warn("location: COARSE permission missing")
             return LocationResult.PermissionMissing
         }
 
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val providers = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
             .filter { manager.isProviderEnabled(it) }
+        Debug.log("location: enabled providers=$providers")
 
         // Use a last-known fix only if it is recent; a stale one would pin weather to where you
         // were (e.g. home over a weekend away), so fall through to an active fix instead.
         for (provider in providers) {
             @Suppress("MissingPermission")
             val fix = manager.getLastKnownLocation(provider)
-            if (fix != null && System.currentTimeMillis() - fix.time <= MAX_AGE_MS) {
-                return remember(fix.latitude, fix.longitude)
+            val ageMs = fix?.let { System.currentTimeMillis() - it.time }
+            Debug.log("location: $provider last-known age=${ageMs?.let { "${it / 60_000}min" } ?: "none"}")
+            if (fix != null && ageMs!! <= MAX_AGE_MS) {
+                return remember("last-known/$provider", fix.latitude, fix.longitude)
             }
         }
 
@@ -53,18 +59,30 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
         // in the background too (the app holds ACCESS_BACKGROUND_LOCATION).
         providers.firstOrNull()?.let { provider ->
             val current = withTimeoutOrNull(15_000) { requestSingle(manager, provider) }
+            // Coordinates are logged rounded (see remember) — no exact position in logcat.
+            Debug.log(
+                "location: live fix from $provider -> " +
+                    if (current is LocationResult.Available) "available" else "$current"
+            )
             if (current is LocationResult.Available) {
-                return remember(current.latitude, current.longitude)
+                return remember("live/$provider", current.latitude, current.longitude)
             }
         }
 
         // Last resort if no live fix is obtainable right now: reuse our last saved fix, but only
         // while it is still recent, so the widget never shows long-stale-location weather.
-        return lastGoodLocation() ?: LocationResult.Unavailable
+        val saved = lastGoodLocation()
+        Debug.log("location: falling back to saved fix -> ${if (saved != null) "available" else "none/too old"}")
+        return saved ?: LocationResult.Unavailable
     }
 
     /** Persist a fresh fix so background refreshes can reuse it, then return it. */
-    private fun remember(latitude: Double, longitude: Double): LocationResult.Available {
+    private fun remember(
+        source: String,
+        latitude: Double,
+        longitude: Double
+    ): LocationResult.Available {
+        Debug.log(String.format(Locale.US, "location: using %s fix %.2f,%.2f", source, latitude, longitude))
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putLong(KEY_LAT, latitude.toRawBits())
             .putLong(KEY_LON, longitude.toRawBits())

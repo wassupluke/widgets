@@ -13,6 +13,7 @@ import android.widget.RemoteViews
 import com.wassupluke.widgets.data.WeatherCache
 import com.wassupluke.widgets.data.WeatherCode
 import com.wassupluke.widgets.data.formatTemperature
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 class WeatherWidgetProvider : AppWidgetProvider() {
@@ -25,22 +26,26 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         // Render from cache + ensure the heartbeat; do NOT fetch here — the host (e.g. the
         // launcher's AppWidgetHost) can fire onUpdate repeatedly, and a fetch per update would
         // storm and, with some hosts, loop.
+        Debug.log("weather onUpdate ids=${appWidgetIds.joinToString()}")
         renderWidgets(context)
         scheduleHeartbeat(context)
     }
 
     override fun onEnabled(context: Context) {
         // First widget placed: seed an initial fetch and start the refresh heartbeat.
+        Debug.log("weather onEnabled — first widget placed")
         RefreshWeatherWorker.enqueueOnce(context)
         scheduleHeartbeat(context)
     }
 
     override fun onDisabled(context: Context) {
+        Debug.log("weather onDisabled — last widget removed")
         cancelHeartbeat(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        Debug.log("weather onReceive action=${intent.action}")
         when (intent.action) {
             ACTION_REFRESH -> RefreshWeatherWorker.enqueueOnce(context)
             // The heartbeat alarm fired: refresh, then re-arm the next one.
@@ -62,7 +67,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         fun renderWidgets(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = widgetIds(context)
-            if (ids.isEmpty()) return
+            if (ids.isEmpty()) {
+                Debug.log("weather render skipped — no widgets placed")
+                return
+            }
 
             val cached = WeatherCache.load(context)
             val unit = Settings.resolvedUnit(context)
@@ -81,6 +89,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val temperatureSize = Settings.fontSize(context).toFloat()
             val conditionSize = temperatureSize * Settings.CONDITION_SIZE_RATIO
             val gravity = WidgetStyle.gravity(context)
+
+            Debug.log(
+                "weather render ids=${ids.joinToString()} cached=${cached != null} " +
+                    "text='$temperatureText' condition='$conditionText' " +
+                    "tap=${Settings.launchPackage(context) ?: "refresh"}"
+            )
 
             for (id in ids) {
                 val views = RemoteViews(context.packageName, R.layout.widget_weather)
@@ -112,14 +126,15 @@ class WeatherWidgetProvider : AppWidgetProvider() {
          * Re-arming reuses the same PendingIntent, so there is only ever one pending alarm.
          */
         private fun scheduleHeartbeat(context: Context) {
+            val at = System.currentTimeMillis() + REFRESH_INTERVAL_MS
+            Debug.log("heartbeat armed for ${Date(at)}")
             alarmManager(context).setAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                System.currentTimeMillis() + REFRESH_INTERVAL_MS,
-                heartbeatIntent(context)
+                AlarmManager.RTC_WAKEUP, at, heartbeatIntent(context)
             )
         }
 
         private fun cancelHeartbeat(context: Context) {
+            Debug.log("heartbeat cancelled")
             alarmManager(context).cancel(heartbeatIntent(context))
         }
 
@@ -143,7 +158,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         /** PendingIntent that launches [packageName], or null if it can't be resolved. */
         private fun launchIntent(context: Context, packageName: String): PendingIntent? {
             val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-                ?: return null
+                ?: run {
+                    Debug.warn("tap target $packageName has no launch intent — falling back")
+                    return null
+                }
             return PendingIntent.getActivity(
                 context, 1, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

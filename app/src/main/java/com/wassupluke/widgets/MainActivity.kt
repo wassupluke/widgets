@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
 
     private val requestPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            Debug.log("COARSE_LOCATION permission granted=$granted")
             updateStatus(granted)
             if (granted) {
                 // "Allow all the time" must be requested separately, after foreground is granted.
@@ -36,7 +37,9 @@ class MainActivity : AppCompatActivity() {
         }
 
     private val requestBackgroundLocation =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* OS handles it */ }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            Debug.log("BACKGROUND_LOCATION permission granted=$granted")
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -234,6 +237,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         val granted = hasPermission()
+        Debug.log("MainActivity onResume, location permission=$granted")
         updateStatus(granted)
         // Foreground fetch: refreshes now and seeds the last-known location that background
         // widget refreshes reuse (they can't acquire a live fix without background-location).
