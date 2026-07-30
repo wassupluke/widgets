@@ -31,6 +31,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Coexist with an installed release build so on-device testing doesn't disturb it.
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

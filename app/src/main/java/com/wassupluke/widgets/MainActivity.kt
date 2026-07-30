@@ -240,8 +240,12 @@ class MainActivity : AppCompatActivity() {
         Debug.log("MainActivity onResume, location permission=$granted")
         updateStatus(granted)
         // Foreground fetch: refreshes now and seeds the last-known location that background
-        // widget refreshes reuse (they can't acquire a live fix without background-location).
-        if (granted) RefreshWeatherWorker.enqueueOnce(this)
+        // widget refreshes reuse. Also (re)register background location updates so the location
+        // cache stays warm between app opens.
+        if (granted) {
+            RefreshWeatherWorker.enqueueOnce(this)
+            BackgroundLocationUpdates.register(this)
+        }
     }
 
     private fun hasPermission(): Boolean =
