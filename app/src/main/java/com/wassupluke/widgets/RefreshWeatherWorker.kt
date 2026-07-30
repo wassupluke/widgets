@@ -1,6 +1,7 @@
 package com.wassupluke.widgets
 
 import android.content.Context
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
@@ -27,6 +28,7 @@ class RefreshWeatherWorker(
         )
         // Weather is fetched in Celsius; the display unit is applied at render time.
         val result = repository.refresh()
+        Log.i(TAG, "refresh result: ${result::class.simpleName}")
         if (result is RefreshResult.Success) {
             WeatherCache.save(applicationContext, result.data)
         }
@@ -44,6 +46,7 @@ class RefreshWeatherWorker(
     }
 
     companion object {
+        private const val TAG = "WeatherRefresh"
         private const val UNIQUE_WORK = "weather_refresh"
 
         private val networkConstraint =

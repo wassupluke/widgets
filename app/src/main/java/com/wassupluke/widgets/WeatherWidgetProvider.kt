@@ -30,13 +30,16 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onEnabled(context: Context) {
-        // First widget placed: seed an initial fetch and start the refresh heartbeat.
+        // First widget placed: seed an initial fetch, start the refresh heartbeat, and start
+        // receiving background location updates (so background refreshes have a location).
         RefreshWeatherWorker.enqueueOnce(context)
         scheduleHeartbeat(context)
+        BackgroundLocationUpdates.register(context)
     }
 
     override fun onDisabled(context: Context) {
         cancelHeartbeat(context)
+        BackgroundLocationUpdates.unregister(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -48,8 +51,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 RefreshWeatherWorker.enqueueOnce(context)
                 scheduleHeartbeat(context)
             }
-            // Alarms are cleared by a reboot; re-arm if a widget is still placed.
-            Intent.ACTION_BOOT_COMPLETED -> if (hasWidgets(context)) scheduleHeartbeat(context)
+            // Alarms and location-update registrations are cleared by a reboot; restore both if a
+            // widget is still placed.
+            Intent.ACTION_BOOT_COMPLETED -> if (hasWidgets(context)) {
+                scheduleHeartbeat(context)
+                BackgroundLocationUpdates.register(context)
+            }
         }
     }
 
