@@ -50,6 +50,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             ACTION_HEARTBEAT -> if (hasWidgets(context)) {
                 RefreshWeatherWorker.enqueueOnce(context)
                 scheduleHeartbeat(context)
+                // Self-heal: registration is skipped if location was off when we last tried, and
+                // is lost outright on reboot. Re-registering is idempotent and cheap, so doing it
+                // here means recovery doesn't depend on the user opening the app.
+                BackgroundLocationUpdates.register(context)
             }
             // Alarms and location-update registrations are cleared by a reboot; restore both if a
             // widget is still placed.
@@ -111,7 +115,17 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 ComponentName(context, WeatherWidgetProvider::class.java)
             )
 
-        private fun hasWidgets(context: Context): Boolean = widgetIds(context).isNotEmpty()
+        /** True if at least one weather widget is placed. */
+        fun hasWidgets(context: Context): Boolean = widgetIds(context).isNotEmpty()
+
+        /**
+         * Push the next heartbeat out a full interval because something else just refreshed
+         * (a delivered location update). Re-arming reuses the same PendingIntent, so this moves
+         * the pending alarm rather than adding one. No-op with no widget placed — nothing to feed.
+         */
+        fun deferHeartbeat(context: Context) {
+            if (hasWidgets(context)) scheduleHeartbeat(context)
+        }
 
         /**
          * Arm a single ~30-min wake-up. `setAndAllowWhileIdle` fires through Doze without the

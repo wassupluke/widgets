@@ -24,8 +24,8 @@ object LocationCache {
         nowMillis: Long = System.currentTimeMillis()
     ) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putLong(KEY_LAT, latitude.toRawBits())
-            .putLong(KEY_LON, longitude.toRawBits())
+            .putLong(KEY_LAT, encode(latitude))
+            .putLong(KEY_LON, encode(longitude))
             .putLong(KEY_AT, nowMillis)
             .apply()
     }
@@ -38,11 +38,38 @@ object LocationCache {
     ): Pair<Double, Double>? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.contains(KEY_AT)) return null
-        if (!isFresh(prefs.getLong(KEY_AT, 0), nowMillis, maxAgeMs)) return null
-        return Double.fromBits(prefs.getLong(KEY_LAT, 0)) to Double.fromBits(prefs.getLong(KEY_LON, 0))
+        return decode(
+            latBits = prefs.getLong(KEY_LAT, 0),
+            lonBits = prefs.getLong(KEY_LON, 0),
+            savedAtMillis = prefs.getLong(KEY_AT, 0),
+            nowMillis = nowMillis,
+            maxAgeMs = maxAgeMs
+        )
     }
 
-    /** Pure freshness test, extracted so it is unit-testable without Android. */
+    /** A coordinate as stored in a `Long` pref. Paired with [decode]. */
+    fun encode(coordinate: Double): Long = coordinate.toRawBits()
+
+    /**
+     * Pure freshness gate + coordinate decode, extracted from [recent] so the storage encoding is
+     * unit-testable without Android.
+     */
+    fun decode(
+        latBits: Long,
+        lonBits: Long,
+        savedAtMillis: Long,
+        nowMillis: Long,
+        maxAgeMs: Long
+    ): Pair<Double, Double>? {
+        if (!isFresh(savedAtMillis, nowMillis, maxAgeMs)) return null
+        return Double.fromBits(latBits) to Double.fromBits(lonBits)
+    }
+
+    /**
+     * Pure freshness test, extracted so it is unit-testable without Android. A timestamp in the
+     * future means the clock moved or the fix carries its own (satellite) time — treat that as
+     * unusable rather than eternally fresh, so the caller falls through to a live fix instead.
+     */
     fun isFresh(savedAtMillis: Long, nowMillis: Long, maxAgeMs: Long): Boolean =
-        nowMillis - savedAtMillis <= maxAgeMs
+        nowMillis - savedAtMillis in 0..maxAgeMs
 }

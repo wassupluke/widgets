@@ -42,8 +42,10 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
         // where you were (e.g. home over a weekend away).
         for (provider in providers) {
             @Suppress("MissingPermission")
-            val fix = manager.getLastKnownLocation(provider)
-            if (fix != null && LocationCache.isFresh(fix.time, System.currentTimeMillis(), LocationCache.MAX_AGE_MS)) {
+            val fix = manager.getLastKnownLocation(provider) ?: continue
+            val fresh =
+                LocationCache.isFresh(fix.time, System.currentTimeMillis(), LocationCache.MAX_AGE_MS)
+            if (fresh) {
                 return remember(fix.latitude, fix.longitude)
             }
         }

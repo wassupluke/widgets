@@ -240,7 +240,15 @@ class MainActivity : AppCompatActivity() {
         // cache stays warm between app opens.
         if (granted) {
             RefreshWeatherWorker.enqueueOnce(this)
-            BackgroundLocationUpdates.register(this)
+            // Only listen for pushed fixes while a widget is actually consuming them. onDisabled
+            // fires only on the last-widget-removed transition, so a user who opens the app but
+            // never places a widget would otherwise keep a 30-min location registration alive
+            // forever, draining battery for nothing.
+            if (WeatherWidgetProvider.hasWidgets(this)) {
+                BackgroundLocationUpdates.register(this)
+            } else {
+                BackgroundLocationUpdates.unregister(this)
+            }
         }
     }
 

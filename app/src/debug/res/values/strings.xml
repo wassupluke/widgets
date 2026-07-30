@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Overrides the main sourceset so the debug install (applicationIdSuffix ".debug") is
+         distinguishable from a release install sitting next to it — they share an icon. -->
+    <string name="app_name">µWidgets debug</string>
+</resources>
