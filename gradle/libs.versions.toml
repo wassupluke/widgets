@@ -1,6 +1,6 @@
 [versions]
 agp = "9.2.1"
-serialization = "2.2.10"
+serialization = "2.4.10"
 core-ktx = "1.17.0"
 appcompat = "1.7.1"
 material = "1.14.0"
