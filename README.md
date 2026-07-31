@@ -37,4 +37,4 @@ Pushing any `v*` tag triggers `.github/workflows/release.yml`, which builds, sig
 - [ ] More guestures on widget (e.g., swipeUp can be set to launch a different app than tap)
 - [ ] Advanced tap actions to launch specific app activity
 - [ ] Minimally / cleanly support displaying even more data: humidity, wind speed or chill, UV, AQI, precip chance
-- [ ] Make a stinkin app icon already
+- [x] Make a stinkin app icon already
