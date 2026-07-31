@@ -27,4 +27,8 @@
     <string name="alarm_tomorrow">Tomorrow</string>
     <string name="settings_alarm_tap_action">Alarm tap action</string>
     <string name="alarm_tap_default">Clock app</string>
+    <string name="background_location_title">Allow location all the time</string>
+    <string name="background_location_message">For the weather widget to update in the background, set the location permission to \"Allow all the time\" in the app settings.</string>
+    <string name="background_location_open_settings">Open Settings</string>
+    <string name="background_location_dismiss">Dismiss</string>
 </resources>

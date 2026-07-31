@@ -3,8 +3,10 @@ package com.wassupluke.widgets
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings as SystemSettings
 import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.SeekBar
@@ -36,10 +38,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-    private val requestBackgroundLocation =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            Debug.log("BACKGROUND_LOCATION permission granted=$granted")
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -172,7 +170,19 @@ class MainActivity : AppCompatActivity() {
         ) == PackageManager.PERMISSION_GRANTED
         if (granted || Settings.backgroundLocationAsked(this)) return
         Settings.setBackgroundLocationAsked(this)
-        requestBackgroundLocation.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.background_location_title)
+            .setMessage(R.string.background_location_message)
+            .setPositiveButton(R.string.background_location_open_settings) { _, _ ->
+                startActivity(
+                    Intent(
+                        SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", packageName, null)
+                    )
+                )
+            }
+            .setNegativeButton(R.string.background_location_dismiss, null)
+            .show()
     }
 
     /** Re-render both widgets — used by the appearance settings they share. */
