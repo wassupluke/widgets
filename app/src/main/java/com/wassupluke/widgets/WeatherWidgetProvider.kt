@@ -72,7 +72,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "com.wassupluke.widgets.ACTION_REFRESH"
         private const val ACTION_HEARTBEAT = "com.wassupluke.widgets.ACTION_HEARTBEAT"
-        private val REFRESH_INTERVAL_MS = TimeUnit.MINUTES.toMillis(30)
+        val REFRESH_INTERVAL_MS = TimeUnit.MINUTES.toMillis(30)
 
         /** Rebuilds RemoteViews for every widget instance from cached data + settings. */
         fun renderWidgets(context: Context) {

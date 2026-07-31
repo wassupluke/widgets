@@ -37,7 +37,7 @@ object LocationCache {
         maxAgeMs: Long = MAX_AGE_MS
     ): Pair<Double, Double>? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (!prefs.contains(KEY_AT)) return null
+        if (!prefs.contains(KEY_AT) || !prefs.contains(KEY_LAT) || !prefs.contains(KEY_LON)) return null
         return decode(
             latBits = prefs.getLong(KEY_LAT, 0),
             lonBits = prefs.getLong(KEY_LON, 0),

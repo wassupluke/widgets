@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
 import androidx.core.content.ContextCompat
-import java.util.concurrent.TimeUnit
 
 /**
  * Registers/unregisters OS-pushed background location updates. Uses a [PendingIntent] delivered to
@@ -18,7 +17,6 @@ import java.util.concurrent.TimeUnit
  * open; the receiver keeps [com.wassupluke.widgets.data.LocationCache] warm for background refreshes.
  */
 object BackgroundLocationUpdates {
-    private val INTERVAL_MS = TimeUnit.MINUTES.toMillis(30)
     private const val MIN_DISTANCE_M = 0f
     private const val REQUEST_CODE = 5
 
@@ -36,7 +34,7 @@ object BackgroundLocationUpdates {
         try {
             manager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
-                INTERVAL_MS,
+                WeatherWidgetProvider.REFRESH_INTERVAL_MS,
                 MIN_DISTANCE_M,
                 updatePendingIntent(context)
             )
