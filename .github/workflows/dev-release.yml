@@ -56,12 +56,17 @@ jobs:
           mv "${{ steps.sign_app.outputs.signedReleaseFile }}" "$RENAMED"
           echo "apk_path=$RENAMED" >> $GITHUB_OUTPUT
 
-      - name: Update dev tag
+      - name: Delete existing dev release
+        run: gh release delete dev --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create dev tag
         run: |
           git tag -f dev
           git push --force origin dev
 
-      - name: Create or update dev release
+      - name: Create dev release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.rename_apk.outputs.apk_path }}
