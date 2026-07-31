@@ -32,15 +32,18 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onEnabled(context: Context) {
-        // First widget placed: seed an initial fetch and start the refresh heartbeat.
+        // First widget placed: seed an initial fetch, start the refresh heartbeat, and start
+        // receiving background location updates (so background refreshes have a location).
         Debug.log("weather onEnabled — first widget placed")
         RefreshWeatherWorker.enqueueOnce(context)
         scheduleHeartbeat(context)
+        BackgroundLocationUpdates.register(context)
     }
 
     override fun onDisabled(context: Context) {
         Debug.log("weather onDisabled — last widget removed")
         cancelHeartbeat(context)
+        BackgroundLocationUpdates.unregister(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -52,16 +55,24 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             ACTION_HEARTBEAT -> if (hasWidgets(context)) {
                 RefreshWeatherWorker.enqueueOnce(context)
                 scheduleHeartbeat(context)
+                // Self-heal: registration is skipped if location was off when we last tried, and
+                // is lost outright on reboot. Re-registering is idempotent and cheap, so doing it
+                // here means recovery doesn't depend on the user opening the app.
+                BackgroundLocationUpdates.register(context)
             }
-            // Alarms are cleared by a reboot; re-arm if a widget is still placed.
-            Intent.ACTION_BOOT_COMPLETED -> if (hasWidgets(context)) scheduleHeartbeat(context)
+            // Alarms and location-update registrations are cleared by a reboot; restore both if a
+            // widget is still placed.
+            Intent.ACTION_BOOT_COMPLETED -> if (hasWidgets(context)) {
+                scheduleHeartbeat(context)
+                BackgroundLocationUpdates.register(context)
+            }
         }
     }
 
     companion object {
         const val ACTION_REFRESH = "com.wassupluke.widgets.ACTION_REFRESH"
         private const val ACTION_HEARTBEAT = "com.wassupluke.widgets.ACTION_HEARTBEAT"
-        private val REFRESH_INTERVAL_MS = TimeUnit.MINUTES.toMillis(30)
+        val REFRESH_INTERVAL_MS = TimeUnit.MINUTES.toMillis(30)
 
         /** Rebuilds RemoteViews for every widget instance from cached data + settings. */
         fun renderWidgets(context: Context) {
@@ -118,7 +129,17 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 ComponentName(context, WeatherWidgetProvider::class.java)
             )
 
-        private fun hasWidgets(context: Context): Boolean = widgetIds(context).isNotEmpty()
+        /** True if at least one weather widget is placed. */
+        fun hasWidgets(context: Context): Boolean = widgetIds(context).isNotEmpty()
+
+        /**
+         * Push the next heartbeat out a full interval because something else just refreshed
+         * (a delivered location update). Re-arming reuses the same PendingIntent, so this moves
+         * the pending alarm rather than adding one. No-op with no widget placed — nothing to feed.
+         */
+        fun deferHeartbeat(context: Context) {
+            if (hasWidgets(context)) scheduleHeartbeat(context)
+        }
 
         /**
          * Arm a single ~30-min wake-up. `setAndAllowWhileIdle` fires through Doze without the

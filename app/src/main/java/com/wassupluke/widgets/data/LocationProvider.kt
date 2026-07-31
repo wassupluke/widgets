@@ -14,7 +14,6 @@ import com.wassupluke.widgets.Debug
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 
 sealed interface LocationResult {
@@ -43,23 +42,23 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
             .filter { manager.isProviderEnabled(it) }
         Debug.log("location: enabled providers=$providers")
 
-        // Use a last-known fix only if it is recent; a stale one would pin weather to where you
-        // were (e.g. home over a weekend away), so fall through to an active fix instead.
+        // 1. A recent framework last-known fix. Only if recent — a stale one would pin weather to
+        // where you were (e.g. home over a weekend away).
         for (provider in providers) {
             @Suppress("MissingPermission")
-            val fix = manager.getLastKnownLocation(provider)
-            val ageMs = fix?.let { System.currentTimeMillis() - it.time }
-            Debug.log("location: $provider last-known age=${ageMs?.let { "${it / 60_000}min" } ?: "none"}")
-            if (fix != null && ageMs!! <= MAX_AGE_MS) {
+            val fix = manager.getLastKnownLocation(provider) ?: continue
+            val fresh =
+                LocationCache.isFresh(fix.time, System.currentTimeMillis(), LocationCache.MAX_AGE_MS)
+            Debug.log("location: $provider last-known fresh=$fresh")
+            if (fresh) {
                 return remember("last-known/$provider", fix.latitude, fix.longitude)
             }
         }
 
-        // Otherwise request a single current fix from the first enabled provider. This now works
-        // in the background too (the app holds ACCESS_BACKGROUND_LOCATION).
+        // 2. A live single fix. Works in the foreground (keeps weather following you when you
+        // travel); in the background it usually returns nothing, and quickly, so we fall through.
         providers.firstOrNull()?.let { provider ->
             val current = withTimeoutOrNull(15_000) { requestSingle(manager, provider) }
-            // Coordinates are logged rounded (see remember) — no exact position in logcat.
             Debug.log(
                 "location: live fix from $provider -> " +
                     if (current is LocationResult.Available) "available" else "$current"
@@ -69,11 +68,16 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
             }
         }
 
-        // Last resort if no live fix is obtainable right now: reuse our last saved fix, but only
-        // while it is still recent, so the widget never shows long-stale-location weather.
-        val saved = lastGoodLocation()
-        Debug.log("location: falling back to saved fix -> ${if (saved != null) "available" else "none/too old"}")
-        return saved ?: LocationResult.Unavailable
+        // 3. Last resort: a recent location the OS pushed to us (kept warm by LocationUpdateReceiver).
+        // This is what makes background refresh work — the OS denies a background app a live fix, so
+        // reuse the last one it delivered rather than failing.
+        LocationCache.recent(context)?.let { (latitude, longitude) ->
+            Debug.log("location: using cached push fix")
+            return LocationResult.Available(latitude, longitude)
+        }
+
+        Debug.log("location: no fix available")
+        return LocationResult.Unavailable
     }
 
     /** Persist a fresh fix so background refreshes can reuse it, then return it. */
@@ -83,22 +87,8 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
         longitude: Double
     ): LocationResult.Available {
         Debug.log(String.format(Locale.US, "location: using %s fix %.2f,%.2f", source, latitude, longitude))
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putLong(KEY_LAT, latitude.toRawBits())
-            .putLong(KEY_LON, longitude.toRawBits())
-            .putLong(KEY_AT, System.currentTimeMillis())
-            .apply()
+        LocationCache.save(context, latitude, longitude)
         return LocationResult.Available(latitude, longitude)
-    }
-
-    private fun lastGoodLocation(): LocationResult.Available? {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (!prefs.contains(KEY_LAT)) return null
-        if (System.currentTimeMillis() - prefs.getLong(KEY_AT, 0) > MAX_AGE_MS) return null
-        return LocationResult.Available(
-            Double.fromBits(prefs.getLong(KEY_LAT, 0)),
-            Double.fromBits(prefs.getLong(KEY_LON, 0))
-        )
     }
 
     private suspend fun requestSingle(
@@ -138,13 +128,5 @@ class FrameworkLocationProvider(private val context: Context) : LocationProvider
             @Suppress("MissingPermission")
             manager.requestSingleUpdate(provider, listener, context.mainLooper)
         }
-    }
-
-    private companion object {
-        const val PREFS = "location_cache"
-        const val KEY_LAT = "lat"
-        const val KEY_LON = "lon"
-        const val KEY_AT = "saved_at"
-        val MAX_AGE_MS = TimeUnit.HOURS.toMillis(2)
     }
 }

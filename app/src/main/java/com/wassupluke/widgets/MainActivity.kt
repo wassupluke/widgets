@@ -240,8 +240,20 @@ class MainActivity : AppCompatActivity() {
         Debug.log("MainActivity onResume, location permission=$granted")
         updateStatus(granted)
         // Foreground fetch: refreshes now and seeds the last-known location that background
-        // widget refreshes reuse (they can't acquire a live fix without background-location).
-        if (granted) RefreshWeatherWorker.enqueueOnce(this)
+        // widget refreshes reuse. Also (re)register background location updates so the location
+        // cache stays warm between app opens.
+        if (granted) {
+            RefreshWeatherWorker.enqueueOnce(this)
+            // Only listen for pushed fixes while a widget is actually consuming them. onDisabled
+            // fires only on the last-widget-removed transition, so a user who opens the app but
+            // never places a widget would otherwise keep a 30-min location registration alive
+            // forever, draining battery for nothing.
+            if (WeatherWidgetProvider.hasWidgets(this)) {
+                BackgroundLocationUpdates.register(this)
+            } else {
+                BackgroundLocationUpdates.unregister(this)
+            }
+        }
     }
 
     private fun hasPermission(): Boolean =

@@ -4,7 +4,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Lets the background refresh acquire a fresh fix so weather follows you when travelling. -->
+    <!-- Required to receive OS-pushed location updates in the background (a background pull returns
+         nothing on some OSes), keeping the location cache warm so weather follows you when travelling. -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -64,5 +65,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/alarm_widget_info" />
         </receiver>
+
+        <!-- Receives OS-pushed background location updates to keep the location cache warm. -->
+        <receiver
+            android:name=".LocationUpdateReceiver"
+            android:exported="false" />
     </application>
 </manifest>
