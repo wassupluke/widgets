@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
-import android.util.Log
 import androidx.core.content.ContextCompat
 import java.util.concurrent.TimeUnit
 
@@ -23,9 +22,6 @@ object BackgroundLocationUpdates {
     private const val MIN_DISTANCE_M = 0f
     private const val REQUEST_CODE = 5
 
-    /** Shared with [LocationUpdateReceiver] so both halves of the push mechanism log under one tag. */
-    internal const val TAG = "WeatherLocation"
-
     /**
      * Idempotent — requesting updates again with the same [PendingIntent] replaces the existing
      * registration rather than stacking a second one, so this is safe to call on every heartbeat.
@@ -34,9 +30,7 @@ object BackgroundLocationUpdates {
         if (!hasLocationPermission(context)) return
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         if (!manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            // Nothing to register against yet. The heartbeat retries, so turning location back on
-            // recovers without needing the app to be opened.
-            Log.i(TAG, "network provider disabled — retrying on the next heartbeat")
+            Debug.log("network provider disabled — retrying on the next heartbeat")
             return
         }
         try {
@@ -47,28 +41,22 @@ object BackgroundLocationUpdates {
                 updatePendingIntent(context)
             )
             if (hasBackgroundLocationPermission(context)) {
-                Log.i(TAG, "registered background location updates")
+                Debug.log("registered background location updates")
             } else {
-                // Foreground-only permission: the OS delivers these updates only while the app is
-                // visible, so the cache goes cold between opens and background refresh falls back
-                // to stale data. This is the failure mode the push mechanism exists to avoid.
-                Log.w(TAG, "registered location updates without ACCESS_BACKGROUND_LOCATION — " +
+                Debug.warn("registered location updates without ACCESS_BACKGROUND_LOCATION — " +
                     "they will only be delivered while the app is in the foreground")
             }
         } catch (e: SecurityException) {
-            // Permission was revoked between the check and the call — nothing to do.
-            Log.w(TAG, "could not register location updates", e)
+            Debug.warn("could not register location updates", e)
         }
     }
 
     fun unregister(context: Context) {
-        // FLAG_NO_CREATE: if we never registered, there is nothing to remove and no reason to
-        // mint a PendingIntent just to hand it straight back.
         val pending = existingPendingIntent(context) ?: return
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         manager.removeUpdates(pending)
         pending.cancel()
-        Log.i(TAG, "unregistered background location updates")
+        Debug.log("unregistered background location updates")
     }
 
     private fun hasLocationPermission(context: Context): Boolean =

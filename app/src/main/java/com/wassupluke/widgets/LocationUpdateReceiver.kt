@@ -6,7 +6,6 @@ import android.content.Intent
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
-import android.util.Log
 import com.wassupluke.widgets.data.LocationCache
 
 /**
@@ -23,15 +22,10 @@ class LocationUpdateReceiver : BroadcastReceiver() {
             return
         }
         LocationCache.save(context, location.latitude, location.longitude)
-        Log.i(BackgroundLocationUpdates.TAG, "location update delivered — refreshing")
-        // Coordinates are personal data and logcat ends up in bug reports, so they are debug-only.
+        Debug.log("location update delivered — refreshing")
         if (BuildConfig.DEBUG) {
-            Log.d(
-                BackgroundLocationUpdates.TAG,
-                "location update: ${location.latitude},${location.longitude}"
-            )
+            Debug.log("location update: ${location.latitude},${location.longitude}")
         }
-        // We now have a fresh location — refresh weather (coalesced with any other trigger).
         RefreshWeatherWorker.enqueueOnce(context)
         // This delivery just refreshed the widget, so push the next heartbeat out a full interval.
         // Both timers run at ~30 min; without this they drift apart and fetch twice per interval.
@@ -48,12 +42,9 @@ class LocationUpdateReceiver : BroadcastReceiver() {
         val extras = intent.extras
         if (extras != null && extras.containsKey(LocationManager.KEY_PROVIDER_ENABLED)) {
             val enabled = extras.getBoolean(LocationManager.KEY_PROVIDER_ENABLED)
-            Log.i(
-                BackgroundLocationUpdates.TAG,
-                "network provider ${if (enabled) "enabled" else "disabled"}"
-            )
+            Debug.log("network provider ${if (enabled) "enabled" else "disabled"}")
         } else {
-            Log.w(BackgroundLocationUpdates.TAG, "location update delivered with no fix — ignoring")
+            Debug.warn("location update delivered with no fix — ignoring")
         }
     }
 

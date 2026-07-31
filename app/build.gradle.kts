@@ -48,11 +48,6 @@ android {
         }
     }
 
-    buildFeatures {
-        // BuildConfig.DEBUG gates the location-coordinate logging so it is compiled out of release.
-        buildConfig = true
-    }
-
     lint {
         abortOnError = true
         checkReleaseBuilds = true
