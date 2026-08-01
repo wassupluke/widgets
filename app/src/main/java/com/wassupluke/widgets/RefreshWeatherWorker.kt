@@ -1,10 +1,8 @@
 package com.wassupluke.widgets
 
 import android.content.Context
-import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
@@ -54,13 +52,9 @@ class RefreshWeatherWorker(
     companion object {
         private const val UNIQUE_WORK = "weather_refresh"
 
-        private val networkConstraint =
-            Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-
         fun enqueueOnce(context: Context) {
             Debug.log("refresh enqueued")
             val request = OneTimeWorkRequestBuilder<RefreshWeatherWorker>()
-                .setConstraints(networkConstraint)
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
             // Unique + REPLACE coalesces a burst of triggers (permission grant, onResume,
