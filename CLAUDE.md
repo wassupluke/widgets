@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 JDK 17+ (source/target 17; JDK 21 runs the build fine). Requires `local.properties` with `sdk.dir=<android-sdk-path>` (gitignored — create it locally; the build fails without it).
 
 - Debug build / install: `./gradlew :app:assembleDebug` / `./gradlew :app:installDebug`. The debug build has `applicationIdSuffix = ".debug"` (+ `versionNameSuffix` and a debug-only `app_name` in `src/debug/res`) so it installs **alongside** a release build for on-device testing without disturbing it.
+- There are **three** build types: `debug`, `release`, and `dev`. `dev` (`assembleDev`) is the prerelease published by `dev-release.yml`; it `initWith(release)` (same minify/shrink/proguard) but adds `applicationIdSuffix = ".dev"`, `versionNameSuffix = "-dev"`, and its own `app_name` (`src/dev/res`) so it too installs **alongside** a real release. Its `versionName` (e.g. `2.0.4-20-g67e1446-dev`) carries the commit hash via `git describe`.
 - All unit tests: `./gradlew :app:testDebugUnitTest`
 - One test class: `./gradlew :app:testDebugUnitTest --tests "com.wassupluke.widgets.WeatherCodeTest"`
 - Lint: `./gradlew lintDebug` (`abortOnError = true`, so lint failures break the build — CI runs this too).
@@ -16,7 +17,7 @@ JDK 17+ (source/target 17; JDK 21 runs the build fine). Requires `local.properti
 
 **Versioning is git-derived** (`app/build.gradle.kts`): `versionCode` = `git rev-list --count HEAD`, `versionName` = `git describe --tags --always`. A build needs real git history with tags — a shallow/zero-depth checkout yields a wrong version (hence the full-depth checkout in CI).
 
-**CI** (`.github/workflows/`): `check.yml` runs lint + unit tests on PRs/pushes to `main`; `dev-release.yml` builds, signs, and publishes a prerelease to the force-pushed `dev` tag on every push to `main`; `release.yml` does the same for `v*` tags. Release builds are signed via repo secrets (`SIGNING_KEY`/`ALIAS`/…) — there is no committed keystore.
+**CI** (`.github/workflows/`): `check.yml` runs lint + unit tests on PRs/pushes to `main`; `dev-release.yml` builds (`assembleDev`), signs, and publishes a prerelease to the force-pushed `dev` tag on every push to `main`; `release.yml` does the same for `v*` tags. Release builds are signed via repo secrets (`SIGNING_KEY`/`ALIAS`/…) — there is no committed keystore.
 
 ## Architecture
 
