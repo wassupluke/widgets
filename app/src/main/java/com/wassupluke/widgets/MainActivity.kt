@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
             updateStatus(granted)
             if (granted) {
                 // "Allow all the time" must be requested separately, after foreground is granted.
-                ensureBackgroundLocation()
+                runOnboardingPrompts()
                 // The refresh heartbeat is armed by the widget's lifecycle; just fetch now.
                 RefreshWeatherWorker.enqueueOnce(this)
             }
@@ -153,22 +153,39 @@ class MainActivity : AppCompatActivity() {
         if (!hasPermission()) {
             requestPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
         } else {
-            ensureBackgroundLocation()
+            runOnboardingPrompts()
         }
     }
 
     /**
-     * Prompt once for "Allow all the time" so background refreshes can get a fresh fix. Only on
-     * API 29+ (pre-29 it's covered by the foreground grant); only after foreground is granted;
-     * asked at most once, then left to system Settings so we never nag.
+     * First-run heads-up about the two settings that keep the widget updating in the background,
+     * shown once after foreground location is granted. The background-location dialog (when
+     * applicable) chains into the background-data dialog on dismiss so they never overlap; if the
+     * location dialog is skipped, the data dialog is still considered.
      */
-    private fun ensureBackgroundLocation() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-        if (!hasPermission()) return
+    private fun runOnboardingPrompts() {
+        if (shouldShowBackgroundLocationDialog()) {
+            showBackgroundLocationDialog(onDismiss = ::maybePromptBackgroundData)
+        } else {
+            maybePromptBackgroundData()
+        }
+    }
+
+    /**
+     * The "Allow all the time" prompt applies only on API 29+ (pre-29 it's covered by the
+     * foreground grant), only after foreground is granted, only if background isn't already
+     * granted, and at most once — then left to system Settings so we never nag.
+     */
+    private fun shouldShowBackgroundLocationDialog(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+        if (!hasPermission()) return false
         val granted = ContextCompat.checkSelfPermission(
             this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
-        if (granted || Settings.backgroundLocationAsked(this)) return
+        return !granted && !Settings.backgroundLocationAsked(this)
+    }
+
+    private fun showBackgroundLocationDialog(onDismiss: () -> Unit) {
         Settings.setBackgroundLocationAsked(this)
         AlertDialog.Builder(this)
             .setTitle(R.string.background_location_title)
@@ -182,7 +199,44 @@ class MainActivity : AppCompatActivity() {
                 )
             }
             .setNegativeButton(R.string.background_location_dismiss, null)
+            // Covers positive, negative, back press, and outside tap — so the data prompt always
+            // follows once the location dialog is gone.
+            .setOnDismissListener { onDismiss() }
             .show()
+    }
+
+    /**
+     * Prompt once that "Background data" must be allowed or background refreshes are blocked on
+     * metered networks. Informational — the OS setting is the fix; asked at most once.
+     */
+    private fun maybePromptBackgroundData() {
+        if (Settings.backgroundDataAsked(this)) return
+        Settings.setBackgroundDataAsked(this)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.background_data_title)
+            .setMessage(R.string.background_data_message)
+            .setPositiveButton(R.string.background_location_open_settings) { _, _ ->
+                openBackgroundDataSettings()
+            }
+            .setNegativeButton(R.string.background_location_dismiss, null)
+            .show()
+    }
+
+    /**
+     * Open the app's unrestricted / background-data screen directly, falling back to the generic
+     * app-details screen on OEMs where the dedicated action doesn't resolve.
+     */
+    private fun openBackgroundDataSettings() {
+        val uri = Uri.fromParts("package", packageName, null)
+        val ignore = Intent(
+            SystemSettings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, uri
+        )
+        val target = if (ignore.resolveActivity(packageManager) != null) {
+            ignore
+        } else {
+            Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
+        }
+        startActivity(target)
     }
 
     /** Re-render both widgets — used by the appearance settings they share. */
