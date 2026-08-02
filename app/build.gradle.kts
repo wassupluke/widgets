@@ -24,7 +24,7 @@ val devVersionName = gitVersionName.zip(gitShortHash) { describe, shortHash ->
 
 android {
     namespace = "com.wassupluke.widgets"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.wassupluke.widgets"
