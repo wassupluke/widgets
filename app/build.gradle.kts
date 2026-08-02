@@ -46,6 +46,15 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // The prerelease "dev" build published from main by dev-release.yml. Inherits the release
+        // config (minify/shrink/proguard) but gets its own applicationId + app name (src/dev/res)
+        // so it installs alongside a real release, and a "-dev" version marker. The commit hash is
+        // already carried by versionName via `git describe` (e.g. 2.0.4-20-g67e1446-dev).
+        create("dev") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
     }
 
     lint {
