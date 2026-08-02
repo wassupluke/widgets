@@ -1,6 +1,7 @@
 package com.wassupluke.widgets
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -236,7 +237,21 @@ class MainActivity : AppCompatActivity() {
         } else {
             Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
         }
-        startActivity(target)
+        // resolveActivity should have vetted the target, but OEM quirks can still leave a
+        // stale/broken entry; fall back to the app-details screen, then give up quietly.
+        try {
+            startActivity(target)
+        } catch (e: ActivityNotFoundException) {
+            Debug.warn("Background-data settings activity not found", e)
+            val details = Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
+            if (target.action != details.action) {
+                try {
+                    startActivity(details)
+                } catch (e: ActivityNotFoundException) {
+                    Debug.warn("App-details settings activity not found", e)
+                }
+            }
+        }
     }
 
     /** Re-render both widgets — used by the appearance settings they share. */

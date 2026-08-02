@@ -32,5 +32,5 @@
     <string name="background_location_open_settings">Open Settings</string>
     <string name="background_location_dismiss">Not now</string>
     <string name="background_data_title">Allow background data</string>
-    <string name="background_data_message">The weather widget may stop updating if background mobile data is not allowed; it is recommended to turn this setting on.</string>
+    <string name="background_data_message">The weather widget may stop updating on metered networks (such as mobile data or a Wi‑Fi hotspot) if background data is not allowed; it is recommended to turn this setting on.</string>
 </resources>
