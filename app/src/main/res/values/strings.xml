@@ -28,7 +28,9 @@
     <string name="settings_alarm_tap_action">Alarm tap action</string>
     <string name="alarm_tap_default">Clock app</string>
     <string name="background_location_title">Allow location all the time</string>
-    <string name="background_location_message">For the weather widget to update in the background, set the location permission to \"Allow all the time\" in the app settings.</string>
+    <string name="background_location_message">The weather widget may not update to your location properly if background location permission is not granted all the time; it is recommended to turn this setting on.</string>
     <string name="background_location_open_settings">Open Settings</string>
-    <string name="background_location_dismiss">Dismiss</string>
+    <string name="background_location_dismiss">Not now</string>
+    <string name="background_data_title">Allow background data</string>
+    <string name="background_data_message">The weather widget may stop updating on metered networks (such as mobile data or a Wi‑Fi hotspot) if background data is not allowed; it is recommended to turn this setting on.</string>
 </resources>
