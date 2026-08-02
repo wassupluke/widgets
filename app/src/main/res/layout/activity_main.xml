@@ -174,10 +174,9 @@
             android:id="@+id/version_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
             android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginTop="24dp"
-            android:paddingBottom="24dp"
-            tools:text="Version 2.0.4-20-g67e1446" />
+            android:layout_marginTop="@dimen/settings_section_spacing"
+            android:paddingBottom="@dimen/settings_section_spacing" />
     </LinearLayout>
 </ScrollView>

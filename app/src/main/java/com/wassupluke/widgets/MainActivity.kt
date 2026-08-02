@@ -151,8 +151,11 @@ class MainActivity : AppCompatActivity() {
             render = { AlarmWidgetProvider.renderAlarmWidgets(this) },
         )
 
+        // Read the installed manifest versionName (not BuildConfig) so it reflects the dev
+        // variant's per-variant versionName override, e.g. "v2.0.5-dev-67e1446".
+        val versionName = packageManager.getPackageInfo(packageName, 0).versionName
         findViewById<TextView>(R.id.version_info).text =
-            getString(R.string.settings_version, BuildConfig.VERSION_NAME)
+            getString(R.string.settings_version, versionName)
 
         if (!hasPermission()) {
             requestPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)

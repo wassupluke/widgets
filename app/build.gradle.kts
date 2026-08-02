@@ -12,6 +12,20 @@ val gitVersionName = providers.exec {
     commandLine("git", "describe", "--tags", "--match", "v*", "--always")
 }.standardOutput.asText.map { it.trim().removePrefix("v").ifEmpty { "0.0.0" } }
 
+val gitShortHash = providers.exec {
+    commandLine("git", "rev-parse", "--short", "HEAD")
+}.standardOutput.asText.map { it.trim().ifEmpty { "unknown" } }
+
+// The dev prerelease is versioned as the *upcoming* release: the latest v* tag with its patch
+// bumped, plus the short commit hash — e.g. tag v2.0.5 at HEAD e11bcb2 -> "v2.0.6-dev-e11bcb2".
+// Fully derived from git (the tag is the part of gitVersionName's "<tag>-<n>-g<hash>" describe
+// before the first "-"), nothing hardcoded.
+val devVersionName = gitVersionName.zip(gitShortHash) { describe, shortHash ->
+    val parts = describe.substringBefore("-").split(".").toMutableList()
+    parts.lastOrNull()?.toIntOrNull()?.let { parts[parts.lastIndex] = (it + 1).toString() }
+    "v${parts.joinToString(".")}-dev-$shortHash"
+}
+
 android {
     namespace = "com.wassupluke.widgets"
     compileSdk = 36
@@ -48,12 +62,11 @@ android {
         }
         // The prerelease "dev" build published from main by dev-release.yml. Inherits the release
         // config (minify/shrink/proguard) but gets its own applicationId + app name (src/dev/res)
-        // so it installs alongside a real release, and a "-dev" version marker. The commit hash is
-        // already carried by versionName via `git describe` (e.g. 2.0.4-20-g67e1446-dev).
+        // so it installs alongside a real release. Its versionName is fully replaced below (per
+        // variant) with `devVersionName` rather than suffixed here.
         create("dev") {
             initWith(getByName("release"))
             applicationIdSuffix = ".dev"
-            versionNameSuffix = "-dev"
         }
     }
 
@@ -67,6 +80,17 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+// Replace (not just suffix) the dev variant's versionName so it reads like the upcoming release,
+// e.g. "v2.0.5-dev-67e1446". Scoped to the dev build type, so release/debug are untouched. This
+// sets the manifest versionName; the in-app "Version …" line reads it back via PackageManager
+// (not BuildConfig, which an output override doesn't reliably reach) so the two always match.
+androidComponents {
+    onVariants(selector().withBuildType("dev")) { variant ->
+        val name = devVersionName.get()
+        variant.outputs.forEach { it.versionName.set(name) }
     }
 }
 
