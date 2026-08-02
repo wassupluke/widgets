@@ -169,5 +169,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:id="@+id/version_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginTop="24dp"
+            android:paddingBottom="24dp"
+            tools:text="Version 2.0.4-20-g67e1446" />
     </LinearLayout>
 </ScrollView>

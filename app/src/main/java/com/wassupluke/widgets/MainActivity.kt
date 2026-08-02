@@ -151,6 +151,9 @@ class MainActivity : AppCompatActivity() {
             render = { AlarmWidgetProvider.renderAlarmWidgets(this) },
         )
 
+        findViewById<TextView>(R.id.version_info).text =
+            getString(R.string.settings_version, BuildConfig.VERSION_NAME)
+
         if (!hasPermission()) {
             requestPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
         } else {
